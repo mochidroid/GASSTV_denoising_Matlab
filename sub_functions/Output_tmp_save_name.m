@@ -1,0 +1,13 @@
+function [tmp_save_name] = Output_tmp_save_name(deg, image, add_name)
+
+
+gaussian_sigma      = deg.gaussian_sigma;
+sparse_rate         = deg.sparse_rate;
+stripe_rate         = deg.stripe_rate;
+
+
+tmp_save_name = append('./tmp_save/denoising_', image, ...
+    '_g', num2str(gaussian_sigma), ...
+    '_ps', num2str(sparse_rate), ...
+    '_pt', num2str(stripe_rate), ...
+    '_', add_name, '.mat');
