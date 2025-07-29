@@ -1,1 +1,1 @@
-# RISSTV_TGRS_Matlab
+# GASSTV_denoising_Matlab
