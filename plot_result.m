@@ -6,10 +6,11 @@ addpath("func_metrics")
 
 
 %% Switching operator
+is_plot_metrics = 1;
 is_show_HSI = 1;
 diff_magnification = 7;
 
-% is_plot_psnr_and_ssim_per_band = 1;
+is_plot_psnr_and_ssim_per_band = 1;
 
 
 %% Selecting conditions
@@ -46,10 +47,7 @@ idc_images = 1;
 
 
 %% Setting common parameters
-% switch_rho = "0.93"; % "0.93", "0.95", "0.98", "all"
-switch_rho = "0.95";
-% switch_rho = "0.98";
-% switch_rho = "all";
+rho_radius = 0.95;
 
 stopcri_idx = 5;
 stopcri = 10 ^ -stopcri_idx;
@@ -57,12 +55,13 @@ stopcri = 10 ^ -stopcri_idx;
 maxiter = 20000;
 % maxiter = 5;
 
+load("dir_save_comp_folder.mat", "dir_save_comp_folder");
+
 
 %% Setting each methods info
 % SSTV
 methods_info(1) = struct( ...
     "name", "SSTV", ...
-    "is_best_param", "each_rho", ...
     "line_style", "--", ...
     "enable", true ...
 );
@@ -70,7 +69,6 @@ methods_info(1) = struct( ...
 % HSSTV_L1
 methods_info(end+1) = struct( ...
     "name", "HSSTV_L1", ...
-    "is_best_param", "each_rho", ...
     "line_style", "--", ...
     "enable", true ...
 );
@@ -78,65 +76,36 @@ methods_info(end+1) = struct( ...
 % HSSTV_L12
 methods_info(end+1) = struct( ...
     "name", "HSSTV_L12", ...
-    "is_best_param", "each_rho", ...
     "line_style", "--", ...
     "enable", true ...
-);
-
-% HSSTV4
-methods_info(end+1) = struct( ...
-    "name", "HSSTV4", ...
-    "is_best_param", "each_rho", ...
-    "line_style", "--", ...
-    "enable", false ...
 );
 
 % LRTDTV
 methods_info(end+1) = struct( ...
     "name", "LRTDTV", ...
-    "is_best_param", "all", ...
     "line_style", "--", ...
-    "enable", true ...
+    "enable", false ...
 );
 
 % TPTV
 methods_info(end+1) = struct( ...
     "name", "TPTV", ...
-    "is_best_param", "all", ...
     "line_style", "--", ...
-    "enable", true ...
-);
-
-% RISSTV
-methods_info(end+1) = struct( ...
-    "name", "RISSTV", ...
-    "is_best_param", "each_rho", ...
-    "line_style", "-", ...
-    "enable", true ...
-);
-
-% TdSSTV_L1
-methods_info(end+1) = struct( ...
-    "name", "TdSSTV_L1", ...
-    "is_best_param", "each_rho", ...
-    "line_style", "-", ...
-    "enable", true ...
-);
-
-% TdSSTV_L12
-methods_info(end+1) = struct( ...
-    "name", "TdSSTV_L12", ...
-    "is_best_param", "each_rho", ...
-    "line_style", "-", ...
     "enable", false ...
 );
 
 % GASSTV
 methods_info(end+1) = struct( ...
     "name", "GASSTV", ...
-    "is_best_param", "each_rho", ...
     "line_style", "-", ...
-    "enable", true ...
+    "enable", false ...
+);
+
+% GASSTV_Const
+methods_info(end+1) = struct( ...
+    "name", "GASSTV_Const", ...
+    "line_style", "-", ...
+    "enable", false ...
 );
 
 
@@ -164,57 +133,10 @@ HSI_clean = single(HSI_clean);
 HSI_noisy = single(HSI_noisy);
 
 
-%% Getting save_text for methods Requiging best params
-load("save_result_dir.mat", "save_result_dir");
-
-for idx_method = 1:num_methods
-    switch methods_info(idx_method).is_best_param
-        case "all"
-            save_best_folder_name = append(...
-                save_result_dir, ...
-                "denoising_", image, "/", ...
-                "g", num2str(deg.gaussian_sigma), "_ps", num2str(deg.sparse_rate), ...
-                        "_pt", num2str(deg.stripe_rate), "_pd", num2str(deg.deadline_rate), "/", ...
-                methods_info(idx_method).name, "/" ...
-            );
-    
-            load(append(save_best_folder_name, "best_params.mat"), "best_params_savetext");
-    
-            methods_info(idx_method).get_params_savetext = best_params_savetext;
-    
-    
-        case "each_rho"
-            save_best_folder_name = append(...
-                save_result_dir, ...
-                "denoising_", image, "/", ...
-                "g", num2str(deg.gaussian_sigma), "_ps", num2str(deg.sparse_rate), ...
-                        "_pt", num2str(deg.stripe_rate), "_pd", num2str(deg.deadline_rate), "/", ...
-                methods_info(idx_method).name, "/" ...
-            );
-    
-            if strcmp(switch_rho, "all")
-                load(append(save_best_folder_name, "best_params.mat"), "best_params_savetext");
-            else
-                load(append(save_best_folder_name, "best_params_r", switch_rho, ".mat"), "best_params_savetext");
-            end
-    
-            methods_info(idx_method).get_params_savetext = best_params_savetext;
-    
-        otherwise
-            error("Invalid value for is_best_param: %s", methods_info(idx_method).is_best_param);
-    end
-end
-
-
-
-
-%% Loading each result
-% Initialization
-list_psnr_per_band = [];
-list_ssim_per_band = [];
-
-name_length_max = max(strlength([methods_info.name]));
-name_params_length_max = max(strlength([methods_info.get_params_savetext]));
+% Calculation noisy results
+val_mpsnr_noisy  = calc_MPSNR(HSI_noisy, HSI_clean);
+val_mssim_noisy  = calc_MSSIM(HSI_noisy, HSI_clean);
+val_sam_noisy    = calc_SAM(HSI_noisy, HSI_clean);
 
 
 fprintf("~~~ SETTINGS ~~~\n");
@@ -225,99 +147,117 @@ fprintf("Stripe rate: %g\n", deg.stripe_rate);
 fprintf("Stripe intensity: %g\n", deg.stripe_intensity);
 fprintf("Deadline rate: %g\n", deg.deadline_rate);
 
-fprintf("~~~ RESULTS ~~~\n");
-fprintf("%s  \t MPSNR\t MSSIM\t SAM\n", blanks(name_length_max + name_params_length_max + 2));
 
-
-% Calculation noisy results
-cat_HSI = cat(2, HSI_clean, HSI_noisy);
-cat_diff = cat(2, zeros(hsi.sizeof), abs(HSI_clean - HSI_noisy));
-
-val_mpsnr_noisy  = calc_MPSNR(HSI_noisy, HSI_clean);
-val_mssim_noisy  = calc_MSSIM(HSI_noisy, HSI_clean);
-val_sam_noisy    = calc_SAM(HSI_noisy, HSI_clean);
-
-
-fprintf("%s: \t %#.4g\t %#.4g\t %#.4g\n", ...
-    append("noisy", blanks(name_length_max + name_params_length_max - 3)), ...
-    val_mpsnr_noisy, val_mssim_noisy, val_sam_noisy);
-
-
-% Loading restored results
+%% Loading results
 for idx_method = 1:num_methods
-name_method = methods_info(idx_method).name;
-params_save_text = methods_info(idx_method).get_params_savetext;
+    name_method = methods_info(idx_method).name;
 
-save_folder_name = append(...
-    save_result_dir , ...
-    "denoising_", image, "/", ...
-    "g", num2str(deg.gaussian_sigma), "_ps", num2str(deg.sparse_rate), ...
-        "_pt", num2str(deg.stripe_rate), "_pd", num2str(deg.deadline_rate), "/", ...
-    name_method, "/", ...
-    params_save_text, "/" ...   
-);
+    dir_result_folder = fullfile(...
+        dir_save_comp_folder, ...
+        append("denoising_", image), ...
+        append("g", num2str(deg.gaussian_sigma), "_ps", num2str(deg.sparse_rate), ...
+                "_pt", num2str(deg.stripe_rate), "_pd", num2str(deg.deadline_rate)), ...
+        name_method ...
+    );
 
-load(append(save_folder_name, "image_result.mat"), ...
-    "HSI_restored" ...
-);
+    load(fullfile(dir_result_folder, "best_params.mat"), "best_params_savetext");
+    methods_info(idx_method).get_params_savetext = best_params_savetext;
 
-load(append(save_folder_name, "metric_vals.mat"), ...
-    "val_mpsnr", "val_mssim", "val_sam", "vals_psnr_per_band", "vals_ssim_per_band" ...
-);
+    load(fullfile(dir_result_folder, append(best_params_savetext, ".mat")), ...
+        "HSI_restored", "val_mpsnr", "val_mssim", "val_sam");
+
+    methods_info(idx_method).HSI_restored = HSI_restored;
+    methods_info(idx_method).val_mpsnr = val_mpsnr;
+    methods_info(idx_method).val_mssim = val_mssim;
+    methods_info(idx_method).val_sam = val_sam;
+end
 
 
-cat_HSI = cat(2, cat_HSI, HSI_restored);
-cat_diff = cat(2, cat_diff, abs(HSI_clean - HSI_restored));
+%% Plotting metrics
+if exist("is_plot_metrics", "var") && is_plot_metrics == 1
+    % Initialization
+    name_length_max = max(strlength([methods_info.name]));
+    name_params_length_max = max(strlength([methods_info.get_params_savetext]));
 
-list_psnr_per_band = cat(1, list_psnr_per_band, vals_psnr_per_band);
-list_ssim_per_band = cat(1, list_ssim_per_band, vals_ssim_per_band);
+    fprintf("~~~ RESULTS ~~~\n");
+    fprintf("%s  \t MPSNR\t MSSIM\t SAM\n", blanks(name_length_max + name_params_length_max + 2));
 
-fprintf("%s(%s): \t %#.4g\t %#.4g\t %#.4g\n", ...
-    append(name_method, blanks(name_length_max - strlength(name_method))), ...
-    append(params_save_text, blanks(name_params_length_max - strlength(params_save_text))), ...
-    val_mpsnr, val_mssim, val_sam);
+    % Plotting noisy results
+    fprintf("%s: \t %#.4g\t %#.4g\t %#.4g\n", ...
+        append("noisy", blanks(name_length_max + name_params_length_max - 3)), ...
+        val_mpsnr_noisy, val_mssim_noisy, val_sam_noisy);
 
+    % Plotting restored results
+    for idx_method = 1:num_methods
+        name_method         = methods_info(idx_method).name;
+        params_save_text    = methods_info(idx_method).get_params_savetext;
+        val_mpsnr           = methods_info(idx_method).val_mpsnr;
+        val_mssim           = methods_info(idx_method).val_mssim;
+        val_sam             = methods_info(idx_method).val_sam;
+
+        fprintf("%s(%s): \t %#.4g\t %#.4g\t %#.4g\n", ...
+            append(name_method, blanks(name_length_max - strlength(name_method))), ...
+            append(params_save_text, blanks(name_params_length_max - strlength(params_save_text))), ...
+            val_mpsnr, val_mssim, val_sam);
+    end
 end
 
 
 %% Showing HSI
 if exist("is_show_HSI", "var") && is_show_HSI == 1
-cat_diff = cat_diff * diff_magnification;
-show_HSI = cat(1, cat_HSI, cat_diff);
-implay(show_HSI)
+    cat_HSI = cat(2, HSI_clean, HSI_noisy);
+
+    for idx_method = 1:num_methods
+        cat_HSI = cat(2, cat_HSI, methods_info(idx_method).HSI_restored);
+    end
+
+    cat_diff = abs(repmat(HSI_clean, [1, num_methods+2, 1]) - cat_HSI) * diff_magnification;
+
+    implay(cat(1, cat_HSI, cat_diff));
 end
 
 
 %% Plotting psnr and ssim per band
 if exist("is_plot_psnr_and_ssim_per_band", "var") && is_plot_psnr_and_ssim_per_band == 1
-label_style = {"FontSize", 15};
+    % Calculating psnr and ssim per band
+    vals_psnr_per_band = zeros(num_methods, hsi.n3);
+    vals_ssim_per_band = zeros(num_methods, hsi.n3);
 
+    for idx_method = 1:num_methods
+        [psnr_per_band, ssim_per_band] = ...
+            calc_PSNR_SSIM_per_band(methods_info(idx_method).HSI_restored, HSI_clean);
+        vals_psnr_per_band(idx_method, :) = psnr_per_band;
+        vals_ssim_per_band(idx_method, :) = ssim_per_band;
+    end
 
-figure(1)
-hold on
-for idx_method = 1:num_methods
-    name_method = methods_info(idx_method).name;
-    lineStyle_method = methods_info(idx_method).line_style;
-    plot_style = {"LineWidth", 2.0, "LineStyle", lineStyle_method, "DisplayName", name_method};
-    plot(list_psnr_per_band(idx_method,:), plot_style{:})
-end
-hold off
-title("psnr per band")
-xlabel("band", label_style{:})
-ylabel("psnr", label_style{:})
-
-figure(2)
-hold on
-for idx_method = 1:num_methods
-    name_method = names_methods{idx_method};
-    lineStyle_method = methods_info(idx_method).line_style;
-    plot_style = {"LineWidth", 2.0, "LineStyle", lineStyle_method, "DisplayName", name_method};
-    plot(list_ssim_per_band(idx_method,:), plot_style{:})
-end
-hold off
-title("ssim per band")
-xlabel("band", label_style{:})
-ylabel("psnr", label_style{:})
+    % Plotting results
+    label_style = {"FontSize", 15};
+    
+    figure(1)
+    hold on
+    for idx_method = 1:num_methods
+        name_method = methods_info(idx_method).name;
+        lineStyle_method = methods_info(idx_method).line_style;
+        plot_style = {"LineWidth", 2.0, "LineStyle", lineStyle_method, "DisplayName", name_method};
+        plot(vals_psnr_per_band(idx_method,:), plot_style{:})
+    end
+    hold off
+    title("psnr per band")
+    xlabel("band", label_style{:})
+    ylabel("psnr", label_style{:})
+    
+    figure(2)
+    hold on
+    for idx_method = 1:num_methods
+        name_method = methods_info(idx_method).name;
+        lineStyle_method = methods_info(idx_method).line_style;
+        plot_style = {"LineWidth", 2.0, "LineStyle", lineStyle_method, "DisplayName", name_method};
+        plot(vals_ssim_per_band(idx_method,:), plot_style{:})
+    end
+    hold off
+    title("ssim per band")
+    xlabel("band", label_style{:})
+    ylabel("ssim", label_style{:})
 
 end
 
