@@ -1,6 +1,8 @@
 function [HSI_restored, removed_noise, other_result] ...
      = select_func_SSTV_for_denoising(HSI_clean, HSI_noisy, params, deg)
 
+addpath('./methods/SSTV');
+
 % Selecting SSTV function based on noise conditions
 if deg.sparse_rate == 0 && deg.stripe_rate == 0
     [HSI_restored, removed_noise, other_result] = ...
