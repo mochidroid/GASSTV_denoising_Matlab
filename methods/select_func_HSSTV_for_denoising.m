@@ -1,6 +1,8 @@
 function [HSI_restored, removed_noise, other_result] ...
      = select_func_HSSTV_for_denoising(HSI_clean, HSI_noisy, params, deg)
 
+addpath('./methods/HSSTV');
+
 % Selecting HSSTV function based on noise conditions
 if deg.sparse_rate == 0 && deg.stripe_rate == 0
     [HSI_restored, removed_noise, other_result] = ...

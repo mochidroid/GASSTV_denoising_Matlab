@@ -5,7 +5,7 @@ switch set_image
     case 'JasperRidge'
         load('H:/マイドライブ/MATLAB_Share/HSIData/JasperRidge/jasperRidge2_R198.mat');
         U_tmp = reshape(Y, [198, 100, 100]);
-        HSI_clean = permute(U_tmp, [2,3,1]);
+        HSI_clean = normalize01(permute(U_tmp, [2,3,1]));
         % U_tmp = permute(U_tmp, [2,3,1]);
         % HSI_clean = normalize01(U_tmp(:,:,[1:102, 110:143, 147:end]));
 
