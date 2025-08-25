@@ -31,13 +31,13 @@ idc_noise_conditions = 11:12;
 % idc_noise_conditions = [5, 2];
 
 images = {...
-    "JasperRidge", ...
+    "JasperRidge64", ...
     "PaviaU", ...
     "Beltsville", ...
 };
 
-idc_images = 1:numel(images);
-% idc_images = 1;
+% idc_images = 1:numel(images);
+idc_images = 1;
 
 
 idx_exp = 0;
@@ -194,7 +194,8 @@ methods_info(end+1) = struct( ...
 
 % S3TTV_SPDHG
 params_S3TTV.blocksize = {[8,8]};
-params_S3TTV.prob_patch = {0.01, 0.1, 0.25, 0.5};
+% params_S3TTV.prob_patch = {0.01, 0.1, 0.25, 0.5};
+params_S3TTV.prob_patch = {1};
 params_S3TTV.eta = {0, 0.99};
 
 methods_info(end+1) = struct( ...
