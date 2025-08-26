@@ -32,7 +32,7 @@ clip_c      = log(2);
 seed        = 'default';
 
 %% Setting params
-dispiter    = unique([1:10, 100:100:maxiter]);
+dispiter    = unique([1:9, 10:10:maxiter]);
 dispband    = round(n3/2);
 
 
@@ -142,10 +142,6 @@ for i = 1:maxiter
     S_next = S_tmp + Primal_sum/3;
     T_next = T_tmp + Primal_sum/3;
 
-    U_res = 2*U_next - U;
-    S_res = 2*S_next - S;
-    T_res = 2*T_next - T;
-
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Updating Y1
@@ -157,35 +153,35 @@ for i = 1:maxiter
     sel_mask(idx) = true;
 
     % 選んだシフト部分だけ更新、それ以外はY1_new = Y1_tmp = Y1;
-    Y1_tmp = Y1 + sigma_YL * P(D(Dl(U_res))).* reshape(sel_mask, [1, 1, 1, 1, b1, b2]);
+    Y1_tmp = Y1 + sigma_YL * (P(D(Dl(U_next))).* reshape(sel_mask, [1, 1, 1, 1, b1, b2]));
     Y1_new = Y1_tmp - sigma_YL * Prox_S3TTV_patch(Y1_tmp/sigma_YL, 1/sigma_YL, sel_mask);
-    Y1_next = Y1_new + (1 / p) * (Y1_new - Y1);
+    Y1_next = Y1_new + ((1 / p) * (Y1_new - Y1).* reshape(sel_mask, [1, 1, 1, 1, b1, b2]));
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Updating Y2
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    Y2_tmp  = Y2 + sigma_Y2*U_res;
+    Y2_tmp  = Y2 + sigma_Y2*U_next;
     Y2_new  = Y2_tmp - sigma_Y2*ProjBox(Y2_tmp/sigma_Y2, 0, 1);
     Y2_next = 2*Y2_new - Y2;
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Updating Y3
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    Y3_tmp  = Y3 + sigma_Y3*S_res;
+    Y3_tmp  = Y3 + sigma_Y3*S_next;
     Y3_new  = Y3_tmp - sigma_Y3.*ProjFastL1Ball(Y3_tmp/sigma_Y3, alpha);
     Y3_next = 2*Y3_new - Y3;
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Updating Y4
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    Y4_tmp  = Y4 + sigma_Y4*T_res;
+    Y4_tmp  = Y4 + sigma_Y4*T_next;
     Y4_new  = Y4_tmp - sigma_Y4*ProjFastL1Ball(Y4_tmp/sigma_Y4, beta);
     Y4_next = 2*Y4_new - Y4;
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Updating Y5
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    Y5_next = Y5 + 2*sigma_Y5*Dv(T_res);
+    Y5_next = Y5 + 2*sigma_Y5*Dv(T_next);
 
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
