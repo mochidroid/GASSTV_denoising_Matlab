@@ -18,5 +18,5 @@ elseif deg.sparse_rate == 0
 
 else
     [HSI_restored, removed_noise, other_result] = ...
-        func_S3TTV_gst_for_denoising_SPDHG(HSI_clean, HSI_noisy, params);
+        func_S3TTV_gst_for_denoising_SPDHG_v2(HSI_clean, HSI_noisy, params);
 end
