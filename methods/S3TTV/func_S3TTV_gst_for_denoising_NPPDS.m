@@ -9,11 +9,11 @@
 %
 % A = (PDDl O O; I I I; O O Dv)
 %
-% Algorithm is based on SPDHG
+% Algorithm is based on Naganuma's P-PDS
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function [HSI_restored, removed_noise, other_result] ...
-     = func_S3TTV_gst_for_denoising_SPDHG_v2(HSI_clean, HSI_noisy, params)
-fprintf('** Running func_S3TTV_gst_for_denoising_SPDHG_v2 **\n');
+     = func_S3TTV_gst_for_denoising_NPPDS(HSI_clean, HSI_noisy, params)
+fprintf('** Running func_S3TTV_gst_for_denoising_NPPDS **\n');
 HSI_clean = single(HSI_clean);
 HSI_noisy  = single(HSI_noisy);
 HSI_noisy_gpu = gpuArray(single(HSI_noisy));
@@ -26,27 +26,9 @@ blocksize   = gpuArray(single(params.blocksize));
 maxiter     = gpuArray(single(params.maxiter));
 stopcri     = gpuArray(single(params.stopcri));
 
-prob_patch  = gpuArray(single(params.prob_patch));
-eta         = gpuArray(single(params.eta));
-clip_c      = log(2);
-seed        = 'default';
-
 %% Setting params
-dispiter    = unique([1:9, 10:10:maxiter]);
+dispiter    = unique([1:10, 1000:1000:maxiter]);
 dispband    = round(n3/2);
-
-
-b1 = blocksize(1);
-b2 = blocksize(2);
-
-assert(mod(n1,b1)==0 && mod(n2,b2)==0, 'n1,n2 は blocksize で割り切れる必要があります。');
-
-nb1 = n1/b1; nb2 = n2/b2; 
-L    = b1*b2;           % シフト総数（= S3TTV の dual ブロック個数）
-p    = prob_patch;   % 更新確率
-m    = max(1, round(p*L));  % select shifts per iteration
-
-if ~isempty(seed); rng(seed); end
 
 
 %% Initializing primal and dual variables
@@ -65,14 +47,8 @@ T = zeros([n1, n2, n3], 'single', 'gpuArray');
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % dual variables
 % Y1: term of S3TTV
-% Y2: term of box constraint
-% Y3: term of sparse noise 
-% Y4: term of stripe noise 
-% Y5: stripe noise
-%
-% Y1 = Pk(D(Dl(U)))
-% Y2 = U + S + T
-% Y3 = Dv(T)
+% Y2: term of l2ball
+% Y3: term of stripe noise
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 Y1 = zeros([n1, n2, n3, 2, blocksize(1), blocksize(2)], 'single', 'gpuArray');
@@ -95,17 +71,10 @@ Pt = @(z) func_PeriodicExpansionTrans(z);
 
 
 %% Setting stepsize parameters for P-PDS
-sq_opnorm_D = 8;
-sq_opnorm_Dl = 4;
-sq_opnorm_Dv = 4;
-sq_opnorm_P = (n1*n2)^2;
-
-% sigma_YL = gpuArray(single(1/(sq_opnorm_P * sq_opnorm_Dl * sq_opnorm_D + 1)));
-sigma_YL = gpuArray(single(1/(sq_opnorm_Dl * sq_opnorm_D)));
-sigma_Y2 = gpuArray(single(1/3));
-sigma_Y3 = gpuArray(single(1/sq_opnorm_Dv));
-
-tau = gpuArray(single(1/(2 + n1*n2*p)));
+gamma1_U    = gpuArray(single(1./(prod(blocksize)^2 * 8*4 + 1)));
+gamma1_S    = gpuArray(single(1));
+gamma1_T    = gpuArray(single(1/(4 + 1)));
+gamma2      = gpuArray(single(1/3));
 
 
 %% main loop (P-PDS)
@@ -126,48 +95,42 @@ for i = 1:maxiter
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Updating U
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    U_tmp   = U - tau*(Dlt(Dt(Pt(Y1))) + Y2);
+    U_tmp   = U - gamma1_U*(Dlt(Dt(Pt(Y1))) + Y2);
     U_next  = ProjBox(U_tmp, 0, 1);
+    U_res = 2*U_next - U;
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Updating S
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    S_tmp   = S - tau*(Y2);
+    S_tmp   = S - gamma1_S*(Y2);
     S_next  = ProjFastL1Ball(S_tmp, alpha);
+    S_res = 2*S_next - S;
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Updating T
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    T_tmp   = T - tau*(Y2 + Dvt(Y3));
+    T_tmp   = T - gamma1_T*(Y2 + Dvt(Y3));
     T_next  = ProjFastL1Ball(T_tmp, beta);
+    T_res = 2*T_next - T;
 
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Updating Y1
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    % ---（新）Y1更新：確率的ミニバッチ + SPDHG extrapolation ---
-    % 1) ミニバッチ選択（b1*b2 の中から m 個）
-    idx = randperm(L, m);
-    sel_mask = false(b1, b2); 
-    sel_mask(idx) = true;
-
-    % 選んだシフト部分だけ更新、それ以外はY1_new = Y1_tmp = Y1;
-    Y1_tmp = Y1 + sigma_YL * (P(D(Dl(U_next))).* reshape(sel_mask, [1, 1, 1, 1, b1, b2]));
-    Y1_new = Y1_tmp - sigma_YL * Prox_S3TTV_patch(Y1_tmp/sigma_YL, 1/sigma_YL, sel_mask);
-    Y1_next = Y1_new + ((1 / p) * (Y1_new - Y1).* reshape(sel_mask, [1, 1, 1, 1, b1, b2]));
+    Y1_tmp  = Y1 + gamma2*(P(D(Dl(U_res)));
+    Y1_next = Y1_tmp - gamma2*Prox_S3TTV(Y1_tmp/gamma2, 1/gamma2, blocksize);
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Updating Y2
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    Y2_tmp  = Y2 + sigma_Y2*(U_next + S_next + T_next);
-    Y2_new  = Y2_tmp - sigma_Y2*ProjL2ball(Y2_tmp/sigma_Y2, HSI_noisy_gpu, epsilon);
-    Y2_next = 2*Y2_new - Y2;
+    Y2_tmp  = Y2 + gamma2*(U_res + S_res + T_res);
+    Y2_next = Y2_tmp - gamma2*ProjL2ball(Y2_tmp/gamma2, HSI_noisy, epsilon);
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    % Updating Y5
+    % Updating Y3
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    Y3_next = Y3 + 2*sigma_Y3*Dv(T_next);
-    
+    Y3_next = Y3 + gamma2.*Dv(T_res);
+
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Calculating error
@@ -179,24 +142,6 @@ for i = 1:maxiter
     converge_rate_S(i) = norm(S_next(:) - S(:),2)/norm(S(:),2);
     converge_rate_T(i) = norm(T_next(:) - T(:),2)/norm(T(:),2);
     converge_rate_N(i) = norm(N_next(:) - N(:),2)/norm(N(:),2);
-
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    % Updating stepsizes
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    r_primal = norm(U_next(:) - U(:),2) + norm(S_next(:) - S(:),2) + norm(T_next(:) - T(:),2);
-    r_dual = norm(Y1_next(:) - Y1(:),2) + norm(Y2_next(:) - Y2(:),2) ...
-        + norm(Y3_next(:) - Y3(:),2);
-
-    % gamma   = eta * (r_primal - r_dual);
-    % gamma   = max(-clip_c, min(clip_c, gamma));  % clip
-    % gamma   = exp(gamma);
-
-    gamma = 1;
-
-    tau      = tau / gamma;
-    sigma_YL = sigma_YL * gamma;
-    sigma_Y2 = sigma_Y2 * gamma;
-    sigma_Y3 = sigma_Y3 * gamma;
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Updating all variables

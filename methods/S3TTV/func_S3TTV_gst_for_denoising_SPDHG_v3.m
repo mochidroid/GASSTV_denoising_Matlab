@@ -4,16 +4,16 @@
 %               L2ball(U+S+T) + box constraint(U) + Dv(T)=0
 %
 % f1(U,S,T) = 0
-% f2(U,S,T) = box constraint(U) + L1ball(S) + L1ball(T)
-% f3(U,S,T) = |P(D(Dl(U)))|_* + L2ball(U+S+T) + Dv(T)=0
+% f2(U,S,T) = L2ball(U+S+T)
+% f3(U,S,T) = |P(D(Dl(U)))|_* + box constraint(U) + L1ball(S) + L1ball(T) + Dv(T)=0
 %
-% A = (PDDl O O; I I I; O O Dv)
+% A = (PDDl O O; I O O; O I O; O O I; O O Dv)
 %
 % Algorithm is based on SPDHG
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function [HSI_restored, removed_noise, other_result] ...
-     = func_S3TTV_gst_for_denoising_SPDHG_v2(HSI_clean, HSI_noisy, params)
-fprintf('** Running func_S3TTV_gst_for_denoising_SPDHG_v2 **\n');
+     = func_S3TTV_gst_for_denoising_SPDHG_v3(HSI_clean, HSI_noisy, params)
+fprintf('** Running func_S3TTV_gst_for_denoising_SPDHG_v3 **\n');
 HSI_clean = single(HSI_clean);
 HSI_noisy  = single(HSI_noisy);
 HSI_noisy_gpu = gpuArray(single(HSI_noisy));
@@ -32,7 +32,7 @@ clip_c      = log(2);
 seed        = 'default';
 
 %% Setting params
-dispiter    = unique([1:9, 10:10:maxiter]);
+dispiter    = unique([1:10, 100:100:maxiter]);
 dispband    = round(n3/2);
 
 
@@ -71,13 +71,17 @@ T = zeros([n1, n2, n3], 'single', 'gpuArray');
 % Y5: stripe noise
 %
 % Y1 = Pk(D(Dl(U)))
-% Y2 = U + S + T
-% Y3 = Dv(T)
+% Y2 = U
+% Y3 = S
+% Y4 = T
+% Y5 = Dv(T)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 Y1 = zeros([n1, n2, n3, 2, blocksize(1), blocksize(2)], 'single', 'gpuArray');
 Y2 = zeros([n1, n2, n3], 'single', 'gpuArray');
 Y3 = zeros([n1, n2, n3], 'single', 'gpuArray');
+Y4 = zeros([n1, n2, n3], 'single', 'gpuArray');
+Y5 = zeros([n1, n2, n3], 'single', 'gpuArray');
 
 
 %% Setting operators
@@ -102,10 +106,12 @@ sq_opnorm_P = (n1*n2)^2;
 
 % sigma_YL = gpuArray(single(1/(sq_opnorm_P * sq_opnorm_Dl * sq_opnorm_D + 1)));
 sigma_YL = gpuArray(single(1/(sq_opnorm_Dl * sq_opnorm_D)));
-sigma_Y2 = gpuArray(single(1/3));
-sigma_Y3 = gpuArray(single(1/sq_opnorm_Dv));
+sigma_Y2 = gpuArray(single(1));
+sigma_Y3 = gpuArray(single(1));
+sigma_Y4 = gpuArray(single(1));
+sigma_Y5 = gpuArray(single(1/sq_opnorm_Dv));
 
-tau = gpuArray(single(1/(2 + n1*n2*p)));
+tau = gpuArray(single(1/(n1*n2*p + 4)));
 
 
 %% main loop (P-PDS)
@@ -124,22 +130,18 @@ for i = 1:maxiter
     tic;
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    % Updating U
+    % Updating U, S, T
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     U_tmp   = U - tau*(Dlt(Dt(Pt(Y1))) + Y2);
-    U_next  = ProjBox(U_tmp, 0, 1);
+    S_tmp   = S - tau*Y3;
+    T_tmp   = T - tau*(Y4 + Dvt(Y5));
 
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    % Updating S
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    S_tmp   = S - tau*(Y2);
-    S_next  = ProjFastL1Ball(S_tmp, alpha);
+    Primal_sum = U_tmp + S_tmp + T_tmp;
+    Primal_sum = ProjL2ball(Primal_sum, HSI_noisy, epsilon) - Primal_sum;
 
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    % Updating T
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    T_tmp   = T - tau*(Y2 + Dvt(Y3));
-    T_next  = ProjFastL1Ball(T_tmp, beta);
+    U_next = U_tmp + Primal_sum/3;
+    S_next = S_tmp + Primal_sum/3;
+    T_next = T_tmp + Primal_sum/3;
 
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -152,22 +154,36 @@ for i = 1:maxiter
     sel_mask(idx) = true;
 
     % 選んだシフト部分だけ更新、それ以外はY1_new = Y1_tmp = Y1;
-    Y1_tmp = Y1 + sigma_YL * (P(D(Dl(U_next))).* reshape(sel_mask, [1, 1, 1, 1, b1, b2]));
-    Y1_new = Y1_tmp - sigma_YL * Prox_S3TTV_patch(Y1_tmp/sigma_YL, 1/sigma_YL, sel_mask);
+    Y1_tmp  = Y1 + sigma_YL * (P(D(Dl(U_next))).* reshape(sel_mask, [1, 1, 1, 1, b1, b2]));
+    Y1_new  = Y1_tmp - sigma_YL * Prox_S3TTV_patch(Y1_tmp/sigma_YL, 1/sigma_YL, sel_mask);
     Y1_next = Y1_new + ((1 / p) * (Y1_new - Y1).* reshape(sel_mask, [1, 1, 1, 1, b1, b2]));
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Updating Y2
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    Y2_tmp  = Y2 + sigma_Y2*(U_next + S_next + T_next);
-    Y2_new  = Y2_tmp - sigma_Y2*ProjL2ball(Y2_tmp/sigma_Y2, HSI_noisy_gpu, epsilon);
+    Y2_tmp  = Y2 + sigma_Y2*(U_next);
+    Y2_new  = Y2_tmp - sigma_Y2*ProjBox(Y2_tmp/sigma_Y2, 0, 1);
     Y2_next = 2*Y2_new - Y2;
+
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % Updating Y3
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    Y3_tmp  = Y3 + sigma_Y3*(S_next);
+    Y3_new  = Y3_tmp - sigma_Y3*ProjFastL1Ball(Y3_tmp/sigma_Y3, alpha);
+    Y3_next = 2*Y3_new - Y3;
+
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % Updating Y4
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    Y4_tmp  = Y4 + sigma_Y4*(T_next);
+    Y4_new  = Y4_tmp - sigma_Y4*ProjFastL1Ball(Y4_tmp/sigma_Y4, beta);
+    Y4_next = 2*Y4_new - Y4;
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Updating Y5
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    Y3_next = Y3 + 2*sigma_Y3*Dv(T_next);
-    
+    Y5_next = Y5 + 2*sigma_Y5*Dv(T_next);
+
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Calculating error
@@ -185,7 +201,7 @@ for i = 1:maxiter
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     r_primal = norm(U_next(:) - U(:),2) + norm(S_next(:) - S(:),2) + norm(T_next(:) - T(:),2);
     r_dual = norm(Y1_next(:) - Y1(:),2) + norm(Y2_next(:) - Y2(:),2) ...
-        + norm(Y3_next(:) - Y3(:),2);
+        + norm(Y3_next(:) - Y5(:),2);
 
     % gamma   = eta * (r_primal - r_dual);
     % gamma   = max(-clip_c, min(clip_c, gamma));  % clip
@@ -197,6 +213,8 @@ for i = 1:maxiter
     sigma_YL = sigma_YL * gamma;
     sigma_Y2 = sigma_Y2 * gamma;
     sigma_Y3 = sigma_Y3 * gamma;
+    sigma_Y4 = sigma_Y4 * gamma;
+    sigma_Y5 = sigma_Y5 * gamma;
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Updating all variables
@@ -208,6 +226,8 @@ for i = 1:maxiter
     Y1  = Y1_next;
     Y2  = Y2_next;
     Y3  = Y3_next;
+    Y4  = Y4_next;
+    Y5  = Y5_next;
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Convergence checking
