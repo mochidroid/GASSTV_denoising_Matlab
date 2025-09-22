@@ -106,16 +106,16 @@ Pt = @(z) func_PeriodicExpansionTrans(z);
 sq_opnorm_D = 8;
 sq_opnorm_Dl = 4;
 % sq_opnorm_Dv = 4;
-% sq_opnorm_P = (n1*n2)^2;
+sq_opnorm_P = (b1*b2)^2; 
 
 % sigma_YL = gpuArray(single(1/(sq_opnorm_P * sq_opnorm_Dl * sq_opnorm_D + 1)));
-sigma_Y1 = gpuArray(single(1/(sq_opnorm_Dl * sq_opnorm_D)));
+sigma_Y1 = gpuArray(single(1/(sq_opnorm_P * sq_opnorm_Dl * sq_opnorm_D)));
 sigma_Y2 = gpuArray(single(1));
 sigma_Y3 = gpuArray(single(1));
 % sigma_Y4 = gpuArray(single(1));
 % sigma_Y5 = gpuArray(single(1/sq_opnorm_Dv));
 
-tau = 0.9 * min([ params.prob_patch/(sigma_Y1*sq_opnorm_D*sq_opnorm_Dl), 1/sigma_Y2, 1/sigma_Y3 ]);
+tau = 0.9 * prob_patch;
 
 
 %% main loop (P-PDS)
@@ -163,7 +163,7 @@ for i = 1:maxiter
     % 選んだシフト部分だけ更新、それ以外はY1_new = Y1_tmp = Y1;
     Y1_tmp  = Y1 + sigma_Y1 * (P(D(Dl(U_next))).* mask);
     Y1_next  = Y1_tmp - sigma_Y1 * Prox_S3TTV_patch(Y1_tmp/sigma_Y1, 1/sigma_Y1, sel_mask);
-    Y1_bar_new = Y1_bar .* (1 - mask) + ( Y1_next + (1/p)*(Y1_next - Y1) ) .* mask;
+    Y1_bar_new = Y1_next + (1/p)*(Y1_next - Y1);
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Updating Y2
