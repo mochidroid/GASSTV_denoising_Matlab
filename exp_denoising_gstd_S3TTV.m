@@ -27,8 +27,7 @@ noise_conditions = { ...
 };
 
 % idc_noise_conditions = 1:size(noise_conditions, 2);
-% idc_noise_conditions = [5:6, 11:14];
-idc_noise_conditions = 11:12;
+idc_noise_conditions = 2;
 % idc_noise_conditions = [5, 2];
 
 images = {...
@@ -195,9 +194,10 @@ methods_info(end+1) = struct( ...
 
 % S3TTV_SPDHG
 params_S3TTV.blocksize = {[8,8]};
-params_S3TTV.prob_patch = {0.1, 0.25, 0.5, 0.01};
+params_S3TTV.prob_patch = {1, 0.1, 0.25, 0.5};
 % params_S3TTV.prob_patch = {1};
-params_S3TTV.eta = {0, 0.99};
+params_S3TTV.eta = {0};
+% params_S3TTV.eta = {0, 0.99};
 
 methods_info(end+1) = struct( ...
     "name", "S3TTV_SPDHG", ...
