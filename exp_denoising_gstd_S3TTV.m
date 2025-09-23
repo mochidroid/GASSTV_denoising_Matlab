@@ -11,33 +11,19 @@ fprintf("******* initium *******\n");
 noise_conditions = { ...
     %g      ps     pt     tint  pd
     {0.05,  0.05,  0,     0,    0},     ... % g0.1 ps0.05 pt0 pd0
-    {0.1,   0.05,   0,     0,    0},     ... % g0.1 ps0.1 pt0 pd0
-    {0.1,   0,     0,     0,    0},     ... % g0.1 ps0 pt0
-    {0,     0,     0.05,  0.5,  0},     ... % g0 ps0 pt0.05
-    {0.05,  0.05,  0,     0,    0},     ... % g0.05 ps0.05 pt0
-    {0.1,   0.05,  0,     0,    0},     ... % g0.1 ps0.05 pt0
-    {0.05,  0,     0.05,  0.5,  0},     ... % g0.05 ps0 pt0.05
-    {0.1,   0,     0.05,  0.5,  0},     ... % g0.1 ps0 pt0.05
-    {0.05,  0.05,  0.05,  0.3,  0},     ... % g0.05 ps0.05 pt0.05
-    {0.1,   0.05,  0.05,  0.3,  0},     ... % g0.1 ps0.05 pt0.05
-    {0.05,  0.05,  0.05,  0.5,  0},     ... % g0.05 ps0.05 pt0.05
-    {0.1,   0.05,  0.05,  0.5,  0},     ... % g0.1 ps0.05 pt0.05
-    {0.05,  0.05,  0.05,  0.3,  0.001}, ... % g0.05 ps0.05 pt0.05 pd0.001
-    {0.1,   0.05,  0.05,  0.3,  0.001}, ... % g0.1 ps0.05 pt0.05 pd0.001
+    {0.1,   0.05,  0,     0,    0},     ... % g0.1 ps0.1 pt0 pd0
 };
 
-% idc_noise_conditions = 1:size(noise_conditions, 2);
-idc_noise_conditions = 2;
-% idc_noise_conditions = [5, 2];
+idc_noise_conditions = 1:size(noise_conditions, 2);
+% idc_noise_conditions = 2;
 
 images = {...
     "JasperRidge64", ...
-    "PaviaU", ...
-    "Beltsville", ...
+    "PaviaU64", ...
 };
 
-% idc_images = 1:numel(images);
-idc_images = 1;
+idc_images = 1:numel(images);
+% idc_images = 1;
 
 
 idx_exp = 0;
@@ -178,8 +164,8 @@ methods_info(end+1) = struct( ...
     "enable", false ...
 );
 
-% S3TTV
-S3TTV_blocksize = {[10,10]};
+% S3TTV_NPPDS
+S3TTV_blocksize = {[8,8]};
 
 methods_info(end+1) = struct( ...
     "name", "S3TTV_NPPDS", ...
@@ -189,15 +175,15 @@ methods_info(end+1) = struct( ...
     "params", {{S3TTV_blocksize, maxiter, stopcri, rhos}}, ...
     "get_params_savetext", @(params) ...
         sprintf("bl%d_r%.2f_stop1e-%d", params.blocksize(1), params.rho_radius, stopcri_idx), ...
-    "enable", false ...
+    "enable", true ...
 );
 
 % S3TTV_SPDHG
 params_S3TTV.blocksize = {[8,8]};
-params_S3TTV.prob_patch = {1, 0.1, 0.25, 0.5};
+params_S3TTV.prob_patch = {0.25, 0.5, 0.1};
 % params_S3TTV.prob_patch = {1};
-params_S3TTV.eta = {0};
-% params_S3TTV.eta = {0, 0.99};
+% params_S3TTV.eta = {0};
+params_S3TTV.eta = {0, 0.99};
 
 methods_info(end+1) = struct( ...
     "name", "S3TTV_SPDHG", ...
