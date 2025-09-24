@@ -171,7 +171,7 @@ params_S3TTV.blocksize = {[8,8]};
 params_S3TTV.prob_patch = {0.25, 0.5, 0.1};
 % params_S3TTV.prob_patch = {1};
 params_S3TTV.eta = {0};
-% params_S3TTV.eta = {0, 0.99};
+params_S3TTV.eta = {0, 0.99};
 
 methods_info(end+1) = struct( ...
     "name", "S3TTV_SPDHG", ...

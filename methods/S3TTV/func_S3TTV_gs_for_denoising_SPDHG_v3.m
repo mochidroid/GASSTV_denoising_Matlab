@@ -127,6 +127,7 @@ move_mpsnr = zeros([1, maxiter], "single");
 move_mssim = zeros([1, maxiter], "single");
 running_time = zeros([1, maxiter], "single");
 l2ball = zeros([1, maxiter], "single");
+gamma = ones([1, maxiter], "single", "gpuArray");
 
 r_primal = zeros(1,maxiter,'single');
 r_dual   = zeros(1,maxiter,'single');
@@ -208,32 +209,28 @@ for i = 1:maxiter
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Updating stepsizes
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    r_primal(i) = norm(U_next(:) - U(:), 2) + norm(S_next(:) - S(:), 2);
+    r_primal(i) = (converge_rate_U(i) + converge_rate_S(i)) / 2;
 
-    dY1_bar = (Y1_bar_new - Y1_bar) .* mask;       % mask: 今回選ばれたshiftのみ1
-    dY1_bar_tmp = Dlt(Dt(Pt(dY1_bar)));
-    dual1   = norm(dY1_bar_tmp(:), 2);
 
-    % Y2 側（毎回更新, A2^* = I）
-    dY2_bar = (Y2_bar_new - Y2_bar);
-    dual2   = norm(dY2_bar(:), 2);
+    mask_Y1_bar_new = Y1_bar_new .* mask;
+    mask_Y1_bar = Y1_bar .* mask;
+    dual1   = norm(mask_Y1_bar_new(:) - mask_Y1_bar(:), 2)/norm(mask_Y1_bar(:), 2);
 
-    % Y3 側（毎回更新, A3^* = I）
-    dY3_bar = (Y3_bar_new - Y3_bar);
-    dual3   = norm(dY3_bar(:), 2);
+    dual2   = norm(Y2_bar_new(:) - Y2_bar(:), 2)/norm(Y2_bar(:), 2);
+    dual3   = norm(Y3_bar_new(:) - Y3_bar(:), 2)/norm(Y3_bar(:), 2);
 
-    r_dual(i)  = dual1 + dual2 + dual3;
+    r_dual(i)  = (dual1 + dual2 + dual3) / 3;
 
-    % gamma = exp( max(-clipc, min(clipc, eta*(r_primal - r_dual))) );
+    % gamma(i) = exp( max(-clip_c, min(clip_c, eta*(r_primal(i) - r_dual(i)))) );
 
-    gamma = 1;
+    % gamma = 1;
 
-    tau      = tau / gamma;
-    sigma_Y1 = sigma_Y1 * gamma;
-    sigma_Y2 = sigma_Y2 * gamma;
-    sigma_Y3 = sigma_Y3 * gamma;
-    % sigma_Y4 = sigma_Y4 * gamma;
-    % sigma_Y5 = sigma_Y5 * gamma;
+    tau      = tau / gamma(i);
+    sigma_Y1 = sigma_Y1 * gamma(i);
+    sigma_Y2 = sigma_Y2 * gamma(i);
+    sigma_Y3 = sigma_Y3 * gamma(i);
+    % sigma_Y4 = sigma_Y4 * gamma(i);
+    % sigma_Y5 = sigma_Y5 * gamma(i);
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Updating all variables
@@ -262,7 +259,6 @@ for i = 1:maxiter
     move_mssim(i) = calc_MSSIM(gather(U), HSI_clean);
 
     l2ball(i) = norm(gather(N(:)), 2);
-
     
     if i>=2 && converge_rate_U(i) < stopcri
         break
@@ -272,6 +268,8 @@ for i = 1:maxiter
     if ismember(i, dispiter)
         fprintf("Iter: %d, Error: %0.6f, MPSNR: %#.4g, MSSIM: %#.4g, Time: %0.2f.\n", ...
             i, converge_rate_U(i), move_mpsnr(i), move_mssim(i), sum(running_time));
+        % fprintf("Iter: %d, Error: %0.6f, MPSNR: %#.4g, MSSIM: %#.4g, Gamma: %0.2f, Time: %0.2f.\n", ...
+        %     i, converge_rate_U(i), move_mpsnr(i), move_mssim(i), gamma(i), sum(running_time));
 
         figure(1)
         subplot(2,3,1)
@@ -324,3 +322,4 @@ other_result.l2ball                 = gather(l2ball(1:other_result.iteration));
 
 other_result.r_primal               = r_primal(1:i);
 other_result.r_dual                 = r_dual(1:i);
+% other_result.gamma                  = gamma(1:i);
