@@ -10,7 +10,7 @@ if deg.sparse_rate == 0 && deg.stripe_rate == 0
 
 elseif deg.stripe_rate == 0
     [HSI_restored, removed_noise, other_result] = ...
-        func_S3TTV_gs_for_denoising_NPPDS(HSI_clean, HSI_noisy, params);
+        func_S3TTV_gs_for_denoising_PsPPDS(HSI_clean, HSI_noisy, params);
 
 elseif deg.sparse_rate == 0
     [HSI_restored, removed_noise, other_result] = ...
@@ -18,5 +18,5 @@ elseif deg.sparse_rate == 0
 
 else
     [HSI_restored, removed_noise, other_result] = ...
-        func_S3TTV_gst_for_denoising_NPPDS(HSI_clean, HSI_noisy, params);
+        func_S3TTV_gst_for_denoising_PsPPDS(HSI_clean, HSI_noisy, params);
 end
