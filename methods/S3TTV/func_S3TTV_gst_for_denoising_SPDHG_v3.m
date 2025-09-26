@@ -86,6 +86,8 @@ Y5 = zeros([n1, n2, n3], 'single', 'gpuArray');
 Y1_bar = Y1;
 Y2_bar = Y2;
 Y3_bar = Y3;
+Y4_bar = Y4;
+Y5_bar = Y5;
 
 
 %% Setting operators
@@ -105,7 +107,7 @@ Pt = @(z) func_PeriodicExpansionTrans(z);
 %% Setting stepsize parameters for P-PDS
 sq_opnorm_D = 8;
 sq_opnorm_Dl = 4;
-% sq_opnorm_Dv = 4;
+sq_opnorm_Dv = 4;
 sq_opnorm_P = (b1*b2)^2; 
 
 % sigma_YL = gpuArray(single(1/(sq_opnorm_P * sq_opnorm_Dl * sq_opnorm_D + 1)));

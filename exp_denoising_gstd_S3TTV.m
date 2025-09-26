@@ -10,8 +10,8 @@ fprintf("******* initium *******\n");
 %% Selecting conditions
 noise_conditions = { ...
     %g      ps     pt     tint  pd
-    {0.05,  0.05,  0,     0,    0},     ... % g0.1 ps0.05 pt0 pd0
-    {0.1,   0.05,  0,     0,    0},     ... % g0.1 ps0.1 pt0 pd0
+    {0.05,  0.05,  0.05,  0.5,    0},     ... % g0.1 ps0.05 pt0 pd0
+    {0.1,   0.05,  0.05,  0.5,    0},     ... % g0.1 ps0.1 pt0 pd0
 };
 
 % idc_noise_conditions = 1:size(noise_conditions, 2);
