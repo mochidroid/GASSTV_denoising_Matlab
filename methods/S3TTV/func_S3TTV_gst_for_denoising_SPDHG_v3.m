@@ -83,6 +83,10 @@ Y3 = zeros([n1, n2, n3], 'single', 'gpuArray');
 Y4 = zeros([n1, n2, n3], 'single', 'gpuArray');
 Y5 = zeros([n1, n2, n3], 'single', 'gpuArray');
 
+Y1_bar = Y1;
+Y2_bar = Y2;
+Y3_bar = Y3;
+
 
 %% Setting operators
 % Difference operators
@@ -101,17 +105,17 @@ Pt = @(z) func_PeriodicExpansionTrans(z);
 %% Setting stepsize parameters for P-PDS
 sq_opnorm_D = 8;
 sq_opnorm_Dl = 4;
-sq_opnorm_Dv = 4;
-sq_opnorm_P = (n1*n2)^2;
+% sq_opnorm_Dv = 4;
+sq_opnorm_P = (b1*b2)^2; 
 
 % sigma_YL = gpuArray(single(1/(sq_opnorm_P * sq_opnorm_Dl * sq_opnorm_D + 1)));
-sigma_YL = gpuArray(single(1/(sq_opnorm_Dl * sq_opnorm_D)));
+sigma_Y1 = gpuArray(single(1/(sq_opnorm_P * sq_opnorm_Dl * sq_opnorm_D)));
 sigma_Y2 = gpuArray(single(1));
 sigma_Y3 = gpuArray(single(1));
 sigma_Y4 = gpuArray(single(1));
 sigma_Y5 = gpuArray(single(1/sq_opnorm_Dv));
 
-tau = gpuArray(single(1/(n1*n2*p + 4)));
+tau = 0.9 * prob_patch;
 
 
 %% main loop (P-PDS)
@@ -123,6 +127,10 @@ move_mpsnr = zeros([1, maxiter], "single");
 move_mssim = zeros([1, maxiter], "single");
 running_time = zeros([1, maxiter], "single");
 l2ball = zeros([1, maxiter], "single");
+gamma = ones([1, maxiter], "single", "gpuArray");
+
+r_primal = zeros(1,maxiter,'single');
+r_dual   = zeros(1,maxiter,'single');
 
 fprintf('~~~ P-PDS STARTS ~~~\n');
 
@@ -132,11 +140,11 @@ for i = 1:maxiter
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Updating U, S, T
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    U_tmp   = U - tau*(Dlt(Dt(Pt(Y1))) + Y2);
-    S_tmp   = S - tau*Y3;
-    T_tmp   = T - tau*(Y4 + Dvt(Y5));
+    U_tmp   = U - tau*(Dlt(Dt(Pt(Y1_bar))) + Y2_bar);
+    S_tmp   = S - tau*Y3_bar;
+    T_tmp   = T - tau*(Y4_bar + Dvt(Y5_bar));
 
-    Primal_sum = U_tmp + S_tmp + T_tmp;
+    Primal_sum = U_tmp + S_tmp;
     Primal_sum = ProjL2ball(Primal_sum, HSI_noisy, epsilon) - Primal_sum;
 
     U_next = U_tmp + Primal_sum/3;
@@ -150,39 +158,41 @@ for i = 1:maxiter
     % ---（新）Y1更新：確率的ミニバッチ + SPDHG extrapolation ---
     % 1) ミニバッチ選択（b1*b2 の中から m 個）
     idx = randperm(L, m);
-    sel_mask = false(b1, b2); 
-    sel_mask(idx) = true;
+    sel_mask = false(b1,b2); sel_mask(idx)=true;
+    mask = reshape(gpuArray(single(sel_mask)), [1,1,1,1,b1,b2]);
 
     % 選んだシフト部分だけ更新、それ以外はY1_new = Y1_tmp = Y1;
-    Y1_tmp  = Y1 + sigma_YL * (P(D(Dl(U_next))).* reshape(sel_mask, [1, 1, 1, 1, b1, b2]));
-    Y1_new  = Y1_tmp - sigma_YL * Prox_S3TTV_patch(Y1_tmp/sigma_YL, 1/sigma_YL, sel_mask);
-    Y1_next = Y1_new + ((1 / p) * (Y1_new - Y1).* reshape(sel_mask, [1, 1, 1, 1, b1, b2]));
+    Y1_tmp  = Y1 + sigma_Y1 * (P(D(Dl(U_next))).* mask);
+    Y1_next  = Y1_tmp - sigma_Y1 * Prox_S3TTV_patch(Y1_tmp/sigma_Y1, 1/sigma_Y1, sel_mask);
+    Y1_bar = Y1_next + (1/p)*(Y1_next - Y1);
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Updating Y2
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     Y2_tmp  = Y2 + sigma_Y2*(U_next);
-    Y2_new  = Y2_tmp - sigma_Y2*ProjBox(Y2_tmp/sigma_Y2, 0, 1);
-    Y2_next = 2*Y2_new - Y2;
+    Y2_next = Y2_tmp - sigma_Y2*ProjBox(Y2_tmp/sigma_Y2, 0, 1);
+    Y2_bar  = 2*Y2_next - Y2;
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Updating Y3
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     Y3_tmp  = Y3 + sigma_Y3*(S_next);
-    Y3_new  = Y3_tmp - sigma_Y3*ProjFastL1Ball(Y3_tmp/sigma_Y3, alpha);
-    Y3_next = 2*Y3_new - Y3;
+    Y3_next = Y3_tmp - sigma_Y3*ProjFastL1Ball(Y3_tmp/sigma_Y3, alpha);
+    Y3_bar = 2*Y3_next - Y3;
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Updating Y4
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     Y4_tmp  = Y4 + sigma_Y4*(T_next);
-    Y4_new  = Y4_tmp - sigma_Y4*ProjFastL1Ball(Y4_tmp/sigma_Y4, beta);
-    Y4_next = 2*Y4_new - Y4;
+    Y4_next  = Y4_tmp - sigma_Y4*ProjFastL1Ball(Y4_tmp/sigma_Y4, beta);
+    Y4_bar  = 2*Y4_next - Y4;
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Updating Y5
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    Y5_next = Y5 + 2*sigma_Y5*Dv(T_next);
+    Y5_next = Y5 + sigma_Y5*Dv(T_next);
+    Y5_bar  = 2*Y5_next - Y5;
+
 
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -199,18 +209,24 @@ for i = 1:maxiter
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Updating stepsizes
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    r_primal = norm(U_next(:) - U(:),2) + norm(S_next(:) - S(:),2) + norm(T_next(:) - T(:),2);
-    r_dual = norm(Y1_next(:) - Y1(:),2) + norm(Y2_next(:) - Y2(:),2) ...
-        + norm(Y3_next(:) - Y5(:),2);
+    % r_primal(i) = (converge_rate_U(i) + converge_rate_S(i)) / 2;
+    % 
+    % 
+    % mask_Y1_bar_new = Y1_bar_new .* mask;
+    % mask_Y1_bar = Y1_bar .* mask;
+    % dual1   = norm(mask_Y1_bar_new(:) - mask_Y1_bar(:), 2)/norm(mask_Y1_bar(:), 2);
+    % 
+    % dual2   = norm(Y2_bar_new(:) - Y2_bar(:), 2)/norm(Y2_bar(:), 2);
+    % dual3   = norm(Y3_bar_new(:) - Y3_bar(:), 2)/norm(Y3_bar(:), 2);
 
-    % gamma   = eta * (r_primal - r_dual);
-    % gamma   = max(-clip_c, min(clip_c, gamma));  % clip
-    % gamma   = exp(gamma);
+    % r_dual(i)  = (dual1 + dual2 + dual3) / 3;
+
+    % gamma(i) = exp( max(-clip_c, min(clip_c, eta*(r_primal(i) - r_dual(i)))) );
 
     gamma = 1;
 
     tau      = tau / gamma;
-    sigma_YL = sigma_YL * gamma;
+    sigma_Y1 = sigma_Y1 * gamma;
     sigma_Y2 = sigma_Y2 * gamma;
     sigma_Y3 = sigma_Y3 * gamma;
     sigma_Y4 = sigma_Y4 * gamma;
@@ -229,6 +245,10 @@ for i = 1:maxiter
     Y4  = Y4_next;
     Y5  = Y5_next;
 
+    % Y1_bar = Y1_bar_new;
+    % Y2_bar = Y2_bar_new;
+    % Y3_bar = Y3_bar_new;
+
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Convergence checking
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -239,7 +259,6 @@ for i = 1:maxiter
     move_mssim(i) = calc_MSSIM(gather(U), HSI_clean);
 
     l2ball(i) = norm(gather(N(:)), 2);
-
     
     if i>=2 && converge_rate_U(i) < stopcri
         break
@@ -249,6 +268,8 @@ for i = 1:maxiter
     if ismember(i, dispiter)
         fprintf("Iter: %d, Error: %0.6f, MPSNR: %#.4g, MSSIM: %#.4g, Time: %0.2f.\n", ...
             i, converge_rate_U(i), move_mpsnr(i), move_mssim(i), sum(running_time));
+        % fprintf("Iter: %d, Error: %0.6f, MPSNR: %#.4g, MSSIM: %#.4g, Gamma: %0.2f, Time: %0.2f.\n", ...
+        %     i, converge_rate_U(i), move_mpsnr(i), move_mssim(i), gamma(i), sum(running_time));
 
         figure(1)
         subplot(2,3,1)
@@ -285,6 +306,7 @@ other_result.iteration              = gather(i);
 removed_noise.sparse_noise          = gather(S);
 removed_noise.stripe_noise          = gather(T);
 removed_noise.gaussian_noise        = gather(HSI_noisy_gpu - U - S - T);
+% removed_noise.gaussian_noise        = gather(HSI_noisy_gpu - U - S);
 removed_noise.all_noise             = gather(HSI_noisy_gpu - U);
 
 other_result.converge_rate_U        = gather(converge_rate_U(1:other_result.iteration));
@@ -297,3 +319,7 @@ other_result.move_mssim             = gather(move_mssim(1:other_result.iteration
 other_result.running_time           = gather(running_time(1:other_result.iteration));
 
 other_result.l2ball                 = gather(l2ball(1:other_result.iteration));
+
+% other_result.r_primal               = r_primal(1:i);
+% other_result.r_dual                 = r_dual(1:i);
+% other_result.gamma                  = gamma(1:i);
