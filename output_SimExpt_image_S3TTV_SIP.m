@@ -1,0 +1,424 @@
+clear;
+close all;
+
+addpath(genpath("sub_functions"))
+addpath("func_metrics")
+
+
+%% Switching operator
+is_show_cropped_image = 1;
+% is_show_HSI = 1;
+% is_plot_psnr_and_ssim_per_band = 1;
+is_output_image = 1;
+
+
+%% Selecting common parameters
+noise_conditions = { ...
+    %g      ps     pt     tint  pd
+    {0.05,  0.05,  0.05,  0.5,  0},     ... % g0.1 ps0.05 pt0 pd0
+    {0.1,   0.05,  0.05,  0.5,  0},     ... % g0.1 ps0.1 pt0 pd0
+};
+
+images = {...
+    "JasperRidge64", ...
+    "PaviaU64", ...
+};
+
+load("dir_save_comp_folder.mat", "dir_save_comp_folder");
+
+color_types = 'hot';
+% color_types = 'gray';
+
+cmap = colormap(color_types);
+close
+
+
+%% Setting output parameters
+idx_output = 1;
+
+switch idx_output
+    case 1
+        idx_image = 2;
+        idx_noise_condition = 2;
+
+        % gain_restoration = 1;
+        gain_restoration = 2;
+        
+        gain_diff = 5;
+
+        % save_band = 6;
+        % save_band = 17;
+
+        save_band = 51;
+        % save_band = 35; % Jasper Ridge
+        
+        % crop_start_pos = [70, 57];
+        % crop_start_pos = [46, 70];
+
+        crop_start_pos = [34, 10];
+
+        % crop_start_pos = [65, 80];
+
+        % crop_start_pos = [18, 48];
+        % crop_start_pos = [38, 48];
+
+        % crop_start_pos = [34, 68];
+
+        % crop_start_pos = [45, 58]; % Honmei
+
+        crop_size = [20, 20];
+        crop_expansion_rate = 2;
+        crop_embed_tblr = 'br';
+        
+        
+        % arrow_head_pos = [10, 90];
+        % arrow_dir_tblr = "r";
+
+        % arrow_head_pos = [20, 13];
+        % arrow_dir_tblr = "l";
+
+        arrow_head_pos = [40, 16];
+        arrow_dir_tblr = "b";
+
+        arrow_length = 15;
+        arrow_handle_width = 3;
+        arrow_head_width = 3;
+        arrow_methods_idc = [];
+
+    case 2
+        idx_image = 2;
+        idx_noise_condition = 2;
+        % idx_noise_condition = 4;
+
+        gain_restoration = 1.5;
+        % gain_restoration = 2;
+        
+        gain_diff = 5;
+
+        save_band = 20; % Jasper Ridge
+        % save_band = 36; % Jasper Ridge
+        % save_band = 49; % Jasper Ridge
+
+        % crop_start_pos = [51, 3];
+        % crop_start_pos = [45, 3];
+
+        % crop_start_pos = [74, 12];
+        crop_start_pos = [78, 16];
+        % crop_start_pos = [110, 32];
+
+        % crop_size = [20, 20];
+        crop_size = [25, 25];
+        crop_expansion_rate = 2;
+        crop_embed_tblr = 'br';
+        
+        arrow_head_pos = [20, 8];
+        % arrow_head_pos = [38, 74];
+        % arrow_head_pos = [53, 64];
+        arrow_length = 15;
+        arrow_handle_width = 3;
+        arrow_head_width = 3;
+        arrow_dir_tblr = "l";
+        arrow_methods_idc = [];
+
+end
+
+ 
+%% Setting each methods info
+% SSTV
+methods_info(1) = struct( ...
+    "name", "SSTV", ...
+    "get_params_savetext", "r0.95_stop1e-4", ...
+    "enable", true ...
+);
+
+% HSSTV_L1
+methods_info(end+1) = struct( ...
+    "name", "HSSTV_L1", ...
+    "get_params_savetext", "o0.05_r0.95_stop1e-4", ...
+    "enable", true ...
+);
+
+% HSSTV_L12
+methods_info(end+1) = struct( ...
+    "name", "HSSTV_L12", ...
+    "get_params_savetext", "o0.05_r0.95_stop1e-4", ...
+    "enable", true ...
+);
+
+% S3TTV_NPPDS
+methods_info(end+1) = struct( ...
+    "name", "S3TTV_NPPDS", ...
+    "get_params_savetext", "bl8_r0.95_stop1e-4", ...
+    "enable", true ...
+);
+
+
+% S3TTV_SPDHG
+methods_info(end+1) = struct( ...
+    "name", "S3TTV_SPDHG", ...
+    "get_params_savetext", "bl8_p0.25_e0_r0.95_stop1e-4", ...
+    "enable", true ...
+);
+
+
+
+methods_info = methods_info([methods_info.enable]); % removing false methods
+num_methods = numel(methods_info);
+
+
+%% Loading clean and noisy HS images
+deg.gaussian_sigma      = noise_conditions{idx_noise_condition}{1};
+deg.sparse_rate         = noise_conditions{idx_noise_condition}{2};
+deg.stripe_rate         = noise_conditions{idx_noise_condition}{3};
+deg.stripe_intensity    = noise_conditions{idx_noise_condition}{4};
+deg.deadline_rate       = noise_conditions{idx_noise_condition}{5};
+image = images{idx_image};
+
+
+[HSI_clean, hsi] = Load_HSI(image);
+noise_seed = "default";
+[HSI_noisy, deg] = Generate_obsv_for_denoising(HSI_clean, deg, noise_seed);
+
+HSI_clean = single(HSI_clean);
+HSI_noisy = single(HSI_noisy);
+
+
+% Calculation noisy results
+val_mpsnr_noisy  = calc_MPSNR(HSI_noisy, HSI_clean);
+val_mssim_noisy  = calc_MSSIM(HSI_noisy, HSI_clean);
+
+
+fprintf("Image: %s Size: (%d, %d, %d)\n", image, hsi.n1, hsi.n2, hsi.n3);
+fprintf("Case %g (g%g, ps%g, pt%g, pd%g)\n", ...
+    idx_noise_condition, deg.gaussian_sigma, deg.sparse_rate, deg.stripe_rate, deg.deadline_rate);
+
+
+%% Cropping clean and noisy HS images
+image_clean = HSI_clean(:,:,save_band)*gain_restoration;
+image_noisy = HSI_noisy(:,:,save_band)*gain_restoration;
+
+diff_image_noisy_gray = abs(image_noisy - image_clean);
+diff_image_noisy = Gray2RGB(diff_image_noisy_gray, cmap);
+
+% if ~isempty(arrow_methods_idc)
+%     image_clean = Embed_arrow(image_clean, ...
+%                 arrow_head_pos, arrow_length, ...
+%                 arrow_handle_width, arrow_head_width, arrow_dir_tblr);
+%     image_noisy = Embed_arrow(image_noisy, ...
+%                 arrow_head_pos, arrow_length, ...
+%                 arrow_handle_width, arrow_head_width, arrow_dir_tblr);
+%     diff_image_noisy = Embed_arrow(diff_image_noisy, ...
+%                 arrow_head_pos, arrow_length, ...
+%                 arrow_handle_width, arrow_head_width, arrow_dir_tblr);
+% end
+% 
+% image_clean = Crop_Embed_image(image_clean, ...
+%             crop_start_pos, crop_size, crop_expansion_rate, crop_embed_tblr);
+% image_noisy = Crop_Embed_image(image_noisy, ...
+%             crop_start_pos, crop_size, crop_expansion_rate, crop_embed_tblr);
+% diff_image_noisy = Crop_Embed_image(diff_image_noisy, ...
+%             crop_start_pos, crop_size, crop_expansion_rate, crop_embed_tblr);
+
+
+%% Loading and cropping result images
+for idx_method = 1:num_methods 
+    name_method = methods_info(idx_method).name;
+
+     dir_save_method_folder = fullfile(...
+        "./result", ...
+        append("denoising_", image), ...
+        append("g", num2str(deg.gaussian_sigma), "_ps", num2str(deg.sparse_rate), ...
+            "_pt", num2str(deg.stripe_rate), "_pd", num2str(deg.deadline_rate)), ...
+        name_method ...
+    );
+
+    load(fullfile(dir_save_method_folder, ...
+        append(methods_info(idx_method).get_params_savetext, ".mat")), ...
+        "HSI_restored", "val_mpsnr", "val_mssim", "val_sam");
+
+    methods_info(idx_method).HSI_restored = HSI_restored;
+    methods_info(idx_method).val_mpsnr = val_mpsnr;
+    methods_info(idx_method).val_mssim = val_mssim;
+
+
+    % Cropping result images
+    image_restored = HSI_restored(:,:,save_band)*gain_restoration;
+    
+    diff_image_restored_gray = abs(image_restored - image_clean)*gain_diff;
+    diff_image_restored = Gray2RGB(diff_image_restored_gray, cmap);
+    
+    
+    % if find(arrow_methods_idc == idx_method)
+    %     image_restored = Embed_arrow(image_restored, ...
+    %                 arrow_head_pos, arrow_length, ...
+    %                 arrow_handle_width, arrow_head_width, arrow_dir_tblr);
+    %     diff_image_restored = Embed_arrow(diff_image_restored, ...
+    %             arrow_head_pos, arrow_length, ...
+    %             arrow_handle_width, arrow_head_width, arrow_dir_tblr);
+    % end
+
+    % image_restored = Crop_Embed_image(image_restored, ...
+    %             crop_start_pos, crop_size, crop_expansion_rate, crop_embed_tblr);
+    % diff_image_restored = Crop_Embed_image(diff_image_restored, ...
+    %                 crop_start_pos, crop_size, crop_expansion_rate, crop_embed_tblr);
+
+    methods_info(idx_method).image_restored         = image_restored;
+    methods_info(idx_method).diff_image_restored    = diff_image_restored;
+
+end
+
+
+%% Plotting metrics
+% Initialization
+name_length_max = max(strlength([methods_info.name]));
+name_params_length_max = max(strlength([methods_info.get_params_savetext]));
+
+fprintf("~~~ RESULTS ~~~\n");
+fprintf("%s  \t MPSNR\t MSSIM\n", blanks(name_length_max + name_params_length_max + 2));
+
+% Plotting noisy results
+fprintf("%s: \t %#.4g\t %#.4g\n", ...
+    append("noisy", blanks(name_length_max + name_params_length_max - 3)), ...
+    val_mpsnr_noisy, val_mssim_noisy);
+
+% Plotting restored results
+for idx_method = 1:num_methods
+    name_method         = methods_info(idx_method).name;
+    params_save_text    = methods_info(idx_method).get_params_savetext;
+    val_mpsnr           = methods_info(idx_method).val_mpsnr;
+    val_mssim           = methods_info(idx_method).val_mssim;
+
+    fprintf("%s(%s): \t %#.4g\t %#.4g\n", ...
+        append(name_method, blanks(name_length_max - strlength(name_method))), ...
+        append(params_save_text, blanks(name_params_length_max - strlength(params_save_text))), ...
+        val_mpsnr, val_mssim);
+end
+
+fprintf("\n\n")
+
+
+%% Showing cropped images
+if exist("is_show_cropped_image", "var") && is_show_cropped_image == 1
+    cat_restored_image = cat(2, image_clean, image_noisy);
+    cat_diff_image = cat(2, zeros([hsi.n1, hsi.n2, 3]), diff_image_noisy);
+
+    for idx_method = 1:num_methods 
+        cat_restored_image = cat(2, cat_restored_image, methods_info(idx_method).image_restored);
+        cat_diff_image = cat(2, cat_diff_image, methods_info(idx_method).diff_image_restored);
+    end
+
+    figure;
+    imshow(cat_restored_image);
+    
+    figure;
+    imshow(cat_diff_image)
+end
+
+
+%% Showing HSI
+if exist("is_show_HSI", "var") && is_show_HSI == 1
+    cat_HSI = cat(2, HSI_clean, HSI_noisy);
+
+    for idx_method = 1:num_methods
+        cat_HSI = cat(2, cat_HSI, methods_info(idx_method).HSI_restored);
+    end
+
+    cat_diff = abs(repmat(HSI_clean, [1, num_methods+2, 1]) - cat_HSI) * gain_diff;
+    diff_GeoSSTV = abs(HSI_clean - methods_info(num_methods).HSI_restored) * gain_diff;
+    cat_diff_GeoSSTV = repmat(diff_GeoSSTV, [1, num_methods+2, 1]) - cat_diff + 0.5;
+
+    implay(cat(1, cat_HSI, cat_diff, cat_diff_GeoSSTV));
+end
+
+
+%% Plotting psnr and ssim per band
+if exist("is_plot_psnr_and_ssim_per_band", "var") && is_plot_psnr_and_ssim_per_band == 1
+    % Calculating psnr and ssim per band
+    vals_psnr_per_band = zeros(num_methods, hsi.n3);
+    vals_ssim_per_band = zeros(num_methods, hsi.n3);
+    
+    for idx_method = 1:num_methods
+        [psnr_per_band, ssim_per_band] = ...
+            calc_PSNR_SSIM_per_band(methods_info(idx_method).HSI_restored, HSI_clean);
+        vals_psnr_per_band(idx_method, :) = psnr_per_band;
+        vals_ssim_per_band(idx_method, :) = ssim_per_band;
+    end
+    
+    % Plotting results
+    label_style = {"FontSize", 15};
+    
+    figure()
+    hold on
+    for idx_method = 1:num_methods
+        name_method = methods_info(idx_method).name;
+        lineStyle_method = methods_info(idx_method).line_style;
+        plot_style = {"LineWidth", 2.0, "LineStyle", lineStyle_method, "DisplayName", name_method};
+        plot(vals_psnr_per_band(idx_method,:), plot_style{:})
+    end
+    hold off
+    title("psnr per band")
+    xlabel("band", label_style{:})
+    ylabel("psnr", label_style{:})
+    
+    figure()
+    hold on
+    for idx_method = 1:num_methods
+        name_method = methods_info(idx_method).name;
+        lineStyle_method = methods_info(idx_method).line_style;
+        plot_style = {"LineWidth", 2.0, "LineStyle", lineStyle_method, "DisplayName", name_method};
+        plot(vals_ssim_per_band(idx_method,:), plot_style{:})
+    end
+    hold off
+    title("ssim per band")
+    xlabel("band", label_style{:})
+    ylabel("ssim", label_style{:})
+
+end
+
+%% Output restored image
+if exist("is_output_image", "var") && is_output_image == 1
+    dir_output_root = fullfile(...
+        dir_save_comp_folder, ...
+        "GeoSSTV_OJSP", ...
+        sprintf("%s_case%d_b%d", image, idx_noise_condition, save_band));
+    dir_output_result_folder = fullfile(...
+        dir_output_root, ...
+        "restored_image");
+    dir_output_diff_folder = fullfile(...
+        dir_output_root, ...
+        sprintf("diff_image_%s", color_types));
+    mkdir(dir_output_result_folder)
+    mkdir(dir_output_diff_folder)
+
+    % Saving clean and noisy images
+    imwrite(image_clean, ...
+        fullfile(dir_output_result_folder, ...
+            "image_clean.png"), ...
+        'BitDepth', 8);
+
+    imwrite(image_noisy, ...
+        fullfile(dir_output_result_folder, ...
+            "image_noisy.png"), ...
+        'BitDepth', 8);
+    
+
+    for idx_method = 1:num_methods 
+        name_method = methods_info(idx_method).name;
+        image_restored = methods_info(idx_method).image_restored;
+        diff_image_restored = methods_info(idx_method).diff_image_restored;
+
+        imwrite(image_restored, ...
+            fullfile(...
+                dir_output_result_folder, ...
+                sprintf("image_%s.png", name_method)), ...
+            'BitDepth', 8);
+        imwrite(diff_image_restored, ...
+            fullfile(...
+                dir_output_diff_folder, ...
+                sprintf("image_%s.png", name_method)), ...
+            'BitDepth', 8);
+    end
+
+    fprintf("save dir: %s\n", dir_output_result_folder)
+    fprintf("save dir: %s\n", dir_output_diff_folder)
+end
