@@ -233,6 +233,7 @@ for i = 1:maxiter
     r_dual(i)  = (dual1 + dual2 + dual3 + dual4 + dual5) / 5;
 
     gamma(i) = exp( max(-clip_c, min(clip_c, eta*(r_primal(i) - r_dual(i)))) );
+    gamma(i) = max([gamma(i), 1]);
 
     % gamma = 1;
 
