@@ -28,8 +28,8 @@ stopcri     = gpuArray(single(params.stopcri));
 
 prob_patch  = gpuArray(single(params.prob_patch));
 eta         = gpuArray(single(params.eta));
-% clip_c      = log(2);
-clip_c      = log(1);
+clip_c      = gpuArray(single(log(params.clip_c)));
+% clip_c      = log(1);
 seed        = 'default';
 
 %% Setting params
