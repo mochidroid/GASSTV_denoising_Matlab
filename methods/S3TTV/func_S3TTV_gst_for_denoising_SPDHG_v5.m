@@ -4,16 +4,16 @@
 %               L2ball(U+S+T) + box constraint(U) + Dv(T)=0
 %
 % f1(U,S,T) = 0
-% f2(U,S,T) = L2ball(U+S+T)
-% f3(U,S,T) = |P(D(Dl(U)))|_* + box constraint(U) + L1ball(S) + L1ball(T) + Dv(T)=0
+% f2(U,S,T) = box constraint(U) + L1ball(S) + L1ball(T)
+% f3(U,S,T) = |P(D(Dl(U)))|_* + L2ball(U+S+T) + Dv(T)=0
 %
-% A = (PDDl O O; I O O; O I O; O O I; O O Dv)
+% A = (PDDl O O; I I I; O O Dv)
 %
 % Algorithm is based on SPDHG
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function [HSI_restored, removed_noise, other_result] ...
-     = func_S3TTV_gst_for_denoising_SPDHG_v4(HSI_clean, HSI_noisy, params)
-fprintf('** Running func_S3TTV_gst_for_denoising_SPDHG_v4 **\n');
+     = func_S3TTV_gst_for_denoising_SPDHG_v5(HSI_clean, HSI_noisy, params)
+fprintf('** Running func_S3TTV_gst_for_denoising_SPDHG_v5 **\n');
 HSI_clean = single(HSI_clean);
 HSI_noisy  = single(HSI_noisy);
 HSI_noisy_gpu = gpuArray(single(HSI_noisy));
@@ -28,7 +28,8 @@ stopcri     = gpuArray(single(params.stopcri));
 
 prob_patch  = gpuArray(single(params.prob_patch));
 eta         = gpuArray(single(params.eta));
-clip_c      = log(2);
+% clip_c      = log(2);
+clip_c      = log(1);
 seed        = 'default';
 
 %% Setting params
@@ -65,29 +66,21 @@ T = zeros([n1, n2, n3], 'single', 'gpuArray');
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % dual variables
 % Y1: term of S3TTV
-% Y2: term of box constraint
-% Y3: term of sparse noise 
-% Y4: term of stripe noise 
-% Y5: stripe noise
+% Y2: term of data fidelity constraint
+% Y3: stripe noise
 %
 % Y1 = Pk(D(Dl(U)))
-% Y2 = U
-% Y3 = S
-% Y4 = T
-% Y5 = Dv(T)
+% Y2 = U + S + T
+% Y3 = Dv(T)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 Y1 = zeros([n1, n2, n3, 2, blocksize(1), blocksize(2)], 'single', 'gpuArray');
 Y2 = zeros([n1, n2, n3], 'single', 'gpuArray');
 Y3 = zeros([n1, n2, n3], 'single', 'gpuArray');
-Y4 = zeros([n1, n2, n3], 'single', 'gpuArray');
-Y5 = zeros([n1, n2, n3], 'single', 'gpuArray');
 
 Y1_bar = Y1;
 Y2_bar = Y2;
 Y3_bar = Y3;
-Y4_bar = Y4;
-Y5_bar = Y5;
 
 
 %% Setting operators
@@ -111,22 +104,17 @@ sq_opnorm_Dv = 4;
 sq_opnorm_P = (max(b1*b2, 2*n3))^2; 
 
 sq_opnorm_Y1 = sq_opnorm_P * sq_opnorm_Dl * sq_opnorm_D;
-sq_opnorm_Y2 = 1;
-sq_opnorm_Y3 = 1;
-sq_opnorm_Y4 = 1;
-sq_opnorm_Y5 = sq_opnorm_Dv;
+sq_opnorm_Y2 = 3;
+sq_opnorm_Y3 = sq_opnorm_Dv;
 
 % sigma_YL = gpuArray(single(1/(sq_opnorm_P * sq_opnorm_Dl * sq_opnorm_D + 1)));
 sigma_Y1 = gpuArray(single(1/sq_opnorm_Y1));
 sigma_Y2 = gpuArray(single(1/sq_opnorm_Y2));
 sigma_Y3 = gpuArray(single(1/sq_opnorm_Y3));
-sigma_Y4 = gpuArray(single(1/sq_opnorm_Y4));
-sigma_Y5 = gpuArray(single(1/sq_opnorm_Y5));
 
 
 % tau = gpuArray(single(0.99 * prob_patch));
-tau = gpuArray(single(0.99 * min([prob_patch/sq_opnorm_Y1/sigma_Y1, 1/sq_opnorm_Y2/sigma_Y2, 1/sq_opnorm_Y3/sigma_Y3, ...
-        1/sq_opnorm_Y4/sigma_Y4, 1/sq_opnorm_Y5/sigma_Y5])));
+tau = gpuArray(single(0.99 * min([prob_patch/sq_opnorm_Y1/sigma_Y1, 1/sq_opnorm_Y2/sigma_Y2, 1/sq_opnorm_Y3/sigma_Y3])));
 
 
 %% main loop (P-PDS)
@@ -149,18 +137,22 @@ for i = 1:maxiter
     tic;
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    % Updating U, S, T
+    % Updating U
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     U_tmp   = U - tau*(Dlt(Dt(Pt(Y1_bar))) + Y2_bar);
-    S_tmp   = S - tau*Y3_bar;
-    T_tmp   = T - tau*(Y4_bar + Dvt(Y5_bar));
+    U_next  = ProjBox(U_tmp, 0, 1);
 
-    Primal_sum = U_tmp + S_tmp + T_tmp;
-    Primal_sum = ProjL2ball(Primal_sum, HSI_noisy, epsilon) - Primal_sum;
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % Updating S
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    S_tmp   = S - tau*(Y2_bar);
+    S_next  = ProjFastL1Ball(S_tmp, alpha);
 
-    U_next = U_tmp + Primal_sum/3;
-    S_next = S_tmp + Primal_sum/3;
-    T_next = T_tmp + Primal_sum/3;
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % Updating T
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    T_tmp   = T - tau*(Y2_bar + Dvt(Y3_bar));
+    T_next  = ProjFastL1Ball(T_tmp, beta);
 
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -173,36 +165,22 @@ for i = 1:maxiter
     mask = reshape(gpuArray(single(sel_mask)), [1,1,1,1,b1,b2]);
 
     % 選んだシフト部分だけ更新、それ以外はY1_new = Y1_tmp = Y1;
-    Y1_tmp  = Y1 + sigma_Y1 * (P(D(Dl(U_next))).* mask);
+    Y1_tmp  = Y1 + sigma_Y1 * ((P(D(Dl(U_next)))).* mask);
     Y1_next  = Y1_tmp - sigma_Y1 * Prox_S3TTV_patch(Y1_tmp/sigma_Y1, 1/sigma_Y1, sel_mask);
-    Y1_bar_new = Y1_next + (1/p)*(Y1_next - Y1);
+    Y1_bar_next = Y1_next + (1/p)*(Y1_next - Y1);
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Updating Y2
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    Y2_tmp  = Y2 + sigma_Y2*(U_next);
-    Y2_next = Y2_tmp - sigma_Y2*ProjBox(Y2_tmp/sigma_Y2, 0, 1);
-    Y2_bar_new  = 2*Y2_next - Y2;
+    Y2_tmp  = Y2 + sigma_Y2*(U_next + S_next + T_next);
+    Y2_next = Y2_tmp - sigma_Y2*ProjL2ball(Y2_tmp/sigma_Y2, HSI_noisy_gpu, epsilon);
+    Y2_bar_next  = 2*Y2_next - Y2;
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Updating Y3
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    Y3_tmp  = Y3 + sigma_Y3*(S_next);
-    Y3_next = Y3_tmp - sigma_Y3*ProjFastL1Ball(Y3_tmp/sigma_Y3, alpha);
-    Y3_bar_new = 2*Y3_next - Y3;
-
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    % Updating Y4
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    Y4_tmp  = Y4 + sigma_Y4*(T_next);
-    Y4_next  = Y4_tmp - sigma_Y4*ProjFastL1Ball(Y4_tmp/sigma_Y4, beta);
-    Y4_bar_new  = 2*Y4_next - Y4;
-
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    % Updating Y5
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    Y5_next = Y5 + sigma_Y5*Dv(T_next);
-    Y5_bar_new  = 2*Y5_next - Y5;
+    Y3_next = Y3 + sigma_Y3*Dv(T_next);
+    Y3_bar_next  = 2*Y3_next - Y3;
 
 
     
@@ -223,16 +201,14 @@ for i = 1:maxiter
     r_primal(i) = (converge_rate_U(i) + converge_rate_S(i) + converge_rate_T(i)) / 3;
 
 
-    mask_Y1_bar_new = Y1_bar_new .* mask;
+    mask_Y1_bar_new = Y1_bar_next .* mask;
     mask_Y1_bar = Y1_bar .* mask;
     dual1   = norm(mask_Y1_bar_new(:) - mask_Y1_bar(:), 2)/norm(mask_Y1_bar(:), 2);
 
-    dual2   = norm(Y2_bar_new(:) - Y2_bar(:), 2)/norm(Y2_bar(:), 2);
-    dual3   = norm(Y3_bar_new(:) - Y3_bar(:), 2)/norm(Y3_bar(:), 2);
-    dual4   = norm(Y4_bar_new(:) - Y4_bar(:), 2)/norm(Y4_bar(:), 2);
-    dual5   = norm(Y5_bar_new(:) - Y5_bar(:), 2)/norm(Y5_bar(:), 2);
+    dual2   = norm(Y2_bar_next(:) - Y2_bar(:), 2)/norm(Y2_bar(:), 2);
+    dual3   = norm(Y3_bar_next(:) - Y3_bar(:), 2)/norm(Y3_bar(:), 2);
 
-    r_dual(i)  = (dual1 + dual2 + dual3 + dual4 + dual5) / 5;
+    r_dual(i)  = (dual1 + dual2 + dual3) / 3;
 
     gamma(i) = exp( max(-clip_c, min(clip_c, eta*(r_primal(i) - r_dual(i)))) );
     gamma(i) = max([gamma(i), 1]);
@@ -242,12 +218,9 @@ for i = 1:maxiter
     sigma_Y1 = sigma_Y1 * gamma(i);
     sigma_Y2 = sigma_Y2 * gamma(i);
     sigma_Y3 = sigma_Y3 * gamma(i);
-    sigma_Y4 = sigma_Y4 * gamma(i);
-    sigma_Y5 = sigma_Y5 * gamma(i);
 
 
-    tau = gpuArray(single(min([prob_patch/sq_opnorm_Y1/sigma_Y1, 1/sq_opnorm_Y2/sigma_Y2, 1/sq_opnorm_Y3/sigma_Y3, ...
-        1/sq_opnorm_Y4/sigma_Y4, 1/sq_opnorm_Y5/sigma_Y5])));
+    tau = gpuArray(single(0.99 * min([prob_patch/sq_opnorm_Y1/sigma_Y1, 1/sq_opnorm_Y2/sigma_Y2, 1/sq_opnorm_Y3/sigma_Y3])));
 
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -260,14 +233,10 @@ for i = 1:maxiter
     Y1  = Y1_next;
     Y2  = Y2_next;
     Y3  = Y3_next;
-    Y4  = Y4_next;
-    Y5  = Y5_next;
 
-    Y1_bar = Y1_bar_new;
-    Y2_bar = Y2_bar_new;
-    Y3_bar = Y3_bar_new;
-    Y4_bar = Y4_bar_new;
-    Y5_bar = Y5_bar_new;
+    Y1_bar = Y1_bar_next;
+    Y2_bar = Y2_bar_next;
+    Y3_bar = Y3_bar_next;
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Convergence checking
