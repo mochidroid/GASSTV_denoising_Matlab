@@ -16,32 +16,23 @@ diff_magnification = 7;
 
 %% Selecting conditions
 noise_conditions = { ...
-    {0.1,   0.05,  0,     0,    0},     ... % g0.1 ps0.05 pt0 pd0
-    {0.1,   0.1,   0,     0,    0},     ... % g0.1 ps0.05 pt0 pd0
-    {0.1,   0,     0,     0,    0},     ... % g0.1 ps0 pt0
-    {0,     0,     0.05,  0.5,  0},     ... % g0 ps0 pt0.05
-    {0.05,  0.05,  0,     0,    0},     ... % g0.05 ps0.05 pt0
-    {0.1,   0.05,  0,     0,    0},     ... % g0.1 ps0.05 pt0
-    {0.05,  0,     0.05,  0.5,  0},     ... % g0.05 ps0 pt0.05
-    {0.1,   0,     0.05,  0.5,  0},     ... % g0.1 ps0 pt0.05
-    {0.05,  0.05,  0.05,  0.3,  0},     ... % g0.05 ps0.05 pt0.05
-    {0.1,   0.05,  0.05,  0.3,  0},     ... % g0.1 ps0.05 pt0.05
-    {0.05,  0.05,  0.05,  0.5,  0},     ... % g0.05 ps0.05 pt0.05
-    {0.1,   0.05,  0.05,  0.5,  0},     ... % g0.1 ps0.05 pt0.05
-    {0.05,  0.05,  0.05,  0.3,  0.001}, ... % g0.05 ps0.05 pt0.05 pd0.001
-    {0.1,   0.05,  0.05,  0.3,  0.001}, ... % g0.1 ps0.05 pt0.05 pd0.001
+    %g      ps     pt     tint  pd
+    {0.05,  0.05,  0.05,  0.5,    0},     ... % g0.1 ps0.05 pt0 pd0
+    {0.1,   0.05,  0.05,  0.5,    0},     ... % g0.1 ps0.1 pt0 pd0
 };
 
 % idc_noise_conditions = 1:size(noise_conditions, 2);
-% idc_noise_conditions = [5:6, 11:14];
-% idc_noise_conditions = 11:12;
-idc_noise_conditions = 12;
+idc_noise_conditions = [2, 1];
 
 images = {...
     "JasperRidge", ...
-    "PaviaU", ...    
-    "Beltsville", ...
+    "PaviaU", ...
 };
+
+% images = {...
+%     "JasperRidge64", ...
+%     "PaviaU64", ...
+% };
 
 idc_images = 1:numel(images);
 % idc_images = 2;
