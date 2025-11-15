@@ -26,8 +26,8 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 function [HSI_restored, removed_noise, output] ...
-     = func_GASSTV_GLR_OraGuide_Const_gst_for_denoising(HSI_clean, HSI_noisy, params)
-fprintf('** Running func_GASSTV_GLR_OraGuide_gst_for_denoising **\n');
+     = func_GASSTV_GLR_Const_OraGuide_gst_for_denoising(HSI_clean, HSI_noisy, params)
+fprintf('** Running func_GASSTV_GLR_Const_OraGuide_gst_for_denoising **\n');
 HSI_clean = single(HSI_clean);
 HSI_noisy  = single(HSI_noisy);
 HSI_noisy_gpu = gpuArray(single(HSI_noisy));
