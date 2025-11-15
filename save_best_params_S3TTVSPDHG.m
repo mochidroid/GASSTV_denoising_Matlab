@@ -28,7 +28,7 @@ images = {...
 % };
 
 % idc_images = 1:numel(images);
-idc_images = 2;
+idc_images = 1;
 
 
 %% Setting common parameters
@@ -60,8 +60,9 @@ params_S3TTV.blocksize = {[8,8]};
 params_S3TTV.prob_patch = {0.25, 0.1, 0.5};
 % params_S3TTV.prob_patch = {0.25, 0.1, 0.5, 1};
 params_S3TTV.eta = {0};
-% params_S3TTV.eta = {0.9, 1};
+% params_S3TTV.eta = {0.9, 0};
 params_S3TTV.clip_c = {1};
+% params_S3TTV.clip_c = {2};
 
 % methods_info(1) = struct( ...
 %     "name", "S3TTV_SPDHG_v5", ...
