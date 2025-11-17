@@ -10,7 +10,7 @@ is_plot_metrics = 1;
 is_show_HSI = 1;
 diff_magnification = 7;
 
-% is_plot_psnr_and_ssim_per_band = 1;
+is_plot_psnr_and_ssim_per_band = 1;
 % is_output_csv = 1;
 
 
@@ -90,7 +90,7 @@ methods_info(end+1) = struct( ...
 methods_info(end+1) = struct( ...
     "name", "TPTV", ...
     "line_style", "--", ...
-    "enable", false ...
+    "enable", true ...
 );
 
 % FastHyMix
@@ -140,7 +140,7 @@ methods_info(end+1) = struct( ...
 methods_info(end+1) = struct( ...
     "name", "GASSTV_NL_OraG", ...
     "line_style", "-", ...
-    "enable", true ...
+    "enable", false ...
 );
 
 
@@ -268,7 +268,7 @@ if exist("is_plot_psnr_and_ssim_per_band", "var") && is_plot_psnr_and_ssim_per_b
     % Plotting results
     label_style = {"FontSize", 15};
     
-    figure(1)
+    figure()
     hold on
     for idx_method = 1:num_methods
         name_method = methods_info(idx_method).name;
@@ -281,7 +281,7 @@ if exist("is_plot_psnr_and_ssim_per_band", "var") && is_plot_psnr_and_ssim_per_b
     xlabel("band", label_style{:})
     ylabel("psnr", label_style{:})
     
-    figure(2)
+    figure()
     hold on
     for idx_method = 1:num_methods
         name_method = methods_info(idx_method).name;

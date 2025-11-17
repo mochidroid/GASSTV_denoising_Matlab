@@ -229,10 +229,10 @@ for i = 1:maxiter
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Calculating error
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    % N = HSI_noisy - U - S - T;
-    % N_next = HSI_noisy - U_next - S_next - T_next;
-    N = HSI_noisy - U - S;
-    N_next = HSI_noisy - U_next - S_next;
+    N = HSI_noisy - U - S - T;
+    N_next = HSI_noisy - U_next - S_next - T_next;
+    % N = HSI_noisy - U - S;
+    % N_next = HSI_noisy - U_next - S_next;
 
     converge_rate_U(i) = norm(U_next(:) - U(:),2)/norm(U(:),2);
     converge_rate_S(i) = norm(S_next(:) - S(:),2)/norm(S(:),2);
