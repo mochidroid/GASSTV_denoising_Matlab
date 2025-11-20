@@ -44,10 +44,7 @@ num_segments    = single(params.num_segments);
 maxiter         = gpuArray(single(params.maxiter));
 stopcri         = gpuArray(single(params.stopcri));
 
-opts_GLR.sigma_num_segments = num_segments;
-
-
-
+opts_GLR.num_segments = num_segments;
 
 %% Setting params
 dispiter    = unique([1:10, 1000:1000:maxiter]);
