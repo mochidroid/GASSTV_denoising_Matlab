@@ -6,23 +6,17 @@ addpath("func_metrics")
 
 %% Selecting conditions
 noise_conditions = { ...
-    {0.1,   0.05,  0,     0,    0},     ... % g0.1 ps0.05 pt0 pd0
-    {0.1,   0.1,   0,     0,    0},     ... % g0.1 ps0.05 pt0 pd0
+    %g      ps     pt     tint  pd
     {0.1,   0,     0,     0,    0},     ... % g0.1 ps0 pt0
-    {0,     0,     0.05,  0.5,  0},     ... % g0 ps0 pt0.05
-    {0.05,  0.05,  0,     0,    0},     ... % g0.05 ps0.05 pt0
-    {0.1,   0.05,  0,     0,    0},     ... % g0.1 ps0.05 pt0
-    {0.05,  0,     0.05,  0.5,  0},     ... % g0.05 ps0 pt0.05
+    {0.1,   0.05,  0,     0,    0},     ... % g0.1 ps0.05 pt0 pd0
     {0.1,   0,     0.05,  0.5,  0},     ... % g0.1 ps0 pt0.05
-    {0.05,  0.05,  0.05,  0.3,  0},     ... % g0.05 ps0.05 pt0.05
-    {0.1,   0.05,  0.05,  0.3,  0},     ... % g0.1 ps0.05 pt0.05
-    {0.05,  0.05,  0.05,  0.5,  0},     ... % g0.05 ps0.05 pt0.05
-    {0.1,   0.05,  0.05,  0.5,  0},     ... % g0.1 ps0.05 pt0.05
-    {0.05,  0.05,  0.05,  0.3,  0.001}, ... % g0.05 ps0.05 pt0.05 pd0.001
-    {0.1,   0.05,  0.05,  0.3,  0.001}, ... % g0.1 ps0.05 pt0.05 pd0.001
+    {0.1,   0,     0,     0,    0.01},  ... % g0.1 ps0 pt0 pd0.01
+    {0.1,   0.05,  0.05,  0.5,  0.01},  ... % g0.1 ps0.05 pt0.05 pd0.01
+    {0.05,  0.05,  0.05,  0.5,  0},     ... % g0.05 ps0.05 pt0.05 pd0
+    {0.1,   0.05,  0.05,  0.5,  0},     ... % g0.1 ps0.05 pt0.05 pd0
 };
 
-idx_noise_condition = 12;
+idx_noise_condition = 2;
 
 images = {...
     "JasperRidge", ...
@@ -30,11 +24,11 @@ images = {...
     "Beltsville", ...
 };
 
-idx_image = 1;
+idx_image = 2;
 
 fmt4s = @(x) round(x,4,"significant");
 
-name_method = 'GASSTV_Oraguide';
+name_method = 'GASSTV_GLR_Const_OraGuide';
 % name_method = 'GASSTV_Oraguide_Const';
 % name_method = 'GASSTV_GLR_Oraguide';
 
@@ -63,11 +57,15 @@ dir_result_folder = fullfile(...
 %% 
 load(fullfile(dir_result_folder, "summary_metrics.mat"));
 
+
+% "param_names", {{"lambda_rho_sp", "lambda2", "sigma_sp", ...
+%         "num_segments", "maxiter", "stopcri", "rho_radius"}}, ...
+
 % label1 = "lambda_rho_sp";
 % label2 = "lambda_rho_l";
 
-label1 = "sigma_sp";
-label2 = "sigma_s";
+label1 = "lambda_rho_sp";
+label2 = "num_segments";
 
 
 %% 

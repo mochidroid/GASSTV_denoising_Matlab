@@ -37,7 +37,7 @@ noise_conditions = { ...
 
 
 % idc_noise_conditions = 1:size(noise_conditions, 2);
-idc_noise_conditions = 1;
+idc_noise_conditions = 2:3;
 % idc_noise_conditions = 2:5;
 % idc_noise_conditions = 5:6;
 % idc_noise_conditions = 11:12;
@@ -56,8 +56,8 @@ idc_images = 1:2;
 
 %% Setting common parameters
 % rhos = {0.93, 0.95, 0.98};
-% rhos = {0.95};
-rhos = {0.98};
+rhos = {0.95};
+% rhos = {0.98};
 
 % epsilon_rho = 0.01;
 
@@ -426,8 +426,11 @@ val_mpsnr_vec = [summary_metrics.mpsnr];
 
 best_params_savetext = names_params_savetext(best_param_index);
 
+summary_metrics_table = struct2table(summary_metrics);
+
 save(fullfile(dir_result_folder, "best_params.mat"), "best_params_savetext");
-save(fullfile(dir_result_folder, "summary_metrics.mat"), "summary_metrics");
+save(fullfile(dir_result_folder, "summary_metrics.mat"), "summary_metrics", "summary_metrics_table");
+writetable(summary_metrics_table, fullfile(dir_result_folder, "summary_metrics.csv"));
 
 fprintf("best param: %s\n", best_params_savetext);
 fprintf("MPSNR: %#.4g\n", val_mpsnr_max);
