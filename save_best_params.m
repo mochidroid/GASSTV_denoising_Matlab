@@ -7,29 +7,38 @@ addpath("func_metrics")
 fprintf("******* initium *******\n");
 
 %% Selecting conditions
+% noise_conditions = { ...
+%     {0.1,   0.05,  0,     0,    0},     ... % g0.1 ps0.05 pt0 pd0
+%     {0.1,   0.1,   0,     0,    0},     ... % g0.1 ps0.05 pt0 pd0
+%     {0.1,   0,     0,     0,    0},     ... % g0.1 ps0 pt0
+%     {0,     0,     0.05,  0.5,  0},     ... % g0 ps0 pt0.05
+%     {0.05,  0.05,  0,     0,    0},     ... % g0.05 ps0.05 pt0
+%     ...
+%     {0.1,   0.05,  0,     0,    0},     ... % g0.1 ps0.05 pt0
+%     {0.05,  0,     0.05,  0.5,  0},     ... % g0.05 ps0 pt0.05
+%     {0.1,   0,     0.05,  0.5,  0},     ... % g0.1 ps0 pt0.05
+%     {0.05,  0.05,  0.05,  0.3,  0},     ... % g0.05 ps0.05 pt0.05
+%     {0.1,   0.05,  0.05,  0.3,  0},     ... % g0.1 ps0.05 pt0.05
+%     ...
+%     {0.05,  0.05,  0.05,  0.5,  0},     ... % g0.05 ps0.05 pt0.05
+%     {0.1,   0.05,  0.05,  0.5,  0},     ... % g0.1 ps0.05 pt0.05
+%     {0.05,  0.05,  0.05,  0.3,  0.001}, ... % g0.05 ps0.05 pt0.05 pd0.001
+%     {0.1,   0.05,  0.05,  0.3,  0.001}, ... % g0.1 ps0.05 pt0.05 pd0.001
+% };
+
 noise_conditions = { ...
-    {0.1,   0.05,  0,     0,    0},     ... % g0.1 ps0.05 pt0 pd0
-    {0.1,   0.1,   0,     0,    0},     ... % g0.1 ps0.05 pt0 pd0
+    %g      ps     pt     tint  pd
     {0.1,   0,     0,     0,    0},     ... % g0.1 ps0 pt0
-    {0,     0,     0.05,  0.5,  0},     ... % g0 ps0 pt0.05
-    {0.05,  0.05,  0,     0,    0},     ... % g0.05 ps0.05 pt0
-    ...
-    {0.1,   0.05,  0,     0,    0},     ... % g0.1 ps0.05 pt0
-    {0.05,  0,     0.05,  0.5,  0},     ... % g0.05 ps0 pt0.05
+    {0.1,   0.05,  0,     0,    0},     ... % g0.1 ps0.05 pt0 pd0
     {0.1,   0,     0.05,  0.5,  0},     ... % g0.1 ps0 pt0.05
-    {0.05,  0.05,  0.05,  0.3,  0},     ... % g0.05 ps0.05 pt0.05
-    {0.1,   0.05,  0.05,  0.3,  0},     ... % g0.1 ps0.05 pt0.05
-    ...
-    {0.05,  0.05,  0.05,  0.5,  0},     ... % g0.05 ps0.05 pt0.05
-    {0.1,   0.05,  0.05,  0.5,  0},     ... % g0.1 ps0.05 pt0.05
-    {0.05,  0.05,  0.05,  0.3,  0.001}, ... % g0.05 ps0.05 pt0.05 pd0.001
-    {0.1,   0.05,  0.05,  0.3,  0.001}, ... % g0.1 ps0.05 pt0.05 pd0.001
+    {0.1,   0,     0,     0,    0.01},  ... % g0.1 ps0 pt0 pd0.01
+    {0.1,   0.05,  0.05,  0.5,  0.01},  ... % g0.1 ps0.1 pt0 pd0
 };
 
 
 % idc_noise_conditions = 1:size(noise_conditions, 2);
-% idc_noise_conditions = [5:6, 11:14];
-idc_noise_conditions = 11:12;
+idc_noise_conditions = 1;
+% idc_noise_conditions = 2:5;
 % idc_noise_conditions = 5:6;
 % idc_noise_conditions = 11:12;
 % idc_noise_conditions = [5, 2];
@@ -47,7 +56,8 @@ idc_images = 1:2;
 
 %% Setting common parameters
 % rhos = {0.93, 0.95, 0.98};
-rhos = {0.95};
+% rhos = {0.95};
+rhos = {0.98};
 
 % epsilon_rho = 0.01;
 
@@ -84,10 +94,10 @@ methods_info(1) = struct( ...
     "params", {{params_GASSTV.lambda_rho_sp, params_GASSTV.lambda2, params_GASSTV.sigma_sp, ...
         params_GASSTV.num_segments, maxiter, stopcri, rhos}}, ...
     "get_params_savetext", @(params) ...
-        sprintf("l%.2g_%.2g_sp%.2g_ns%d_r%.2f_stop1e-%d", ...
+        sprintf("l%.2g_%.2g_sp%s_ns%d_r%.2f_stop1e-%d", ...
         params.lambda_rho_sp, params.lambda2, params.sigma_sp, ...
         params.num_segments, params.rho_radius, stopcri_idx), ...
-    "enable", false ...
+    "enable", true ...
 );
 
 % GASSTV_NL_OraG
