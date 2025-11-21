@@ -36,6 +36,10 @@ if ~isfield(opts,'num_segments'), opts.num_segments = 50; end
 if ~isfield(opts,'k_lap'),        opts.k_lap        = min(10, max(0,K-1)); end
 if ~isfield(opts,'sigma_l'),      opts.sigma_l      = "med"; end
 
+if numel(opts.k_lap) > 1
+    opts.k_lap = opts.k_lap(1);   % 念のため先頭だけ使う
+end
+
 S      = opts.num_segments;
 k_lap  = max(0, min(opts.k_lap, max(0,K-1)));
 sigma_l_opt = opts.sigma_l;

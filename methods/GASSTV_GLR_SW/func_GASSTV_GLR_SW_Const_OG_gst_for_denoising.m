@@ -45,8 +45,8 @@ maxiter         = gpuArray(single(params.maxiter));
 stopcri         = gpuArray(single(params.stopcri));
 
 opts_GLR.num_segments = num_segments;
-opts_GLR.k_lap        = [];      % デフォルトに任せるなら []
-opts_GLR.sigma_l      = "med";
+
+
 
 
 %% Setting params
@@ -113,12 +113,26 @@ DstGLR  = @(z) cat(3, -z(:, :, 1), -z(:, :, 2:n3-1) + z(:, :, 1:n3-2), z(:, :, n
 % Graph based weight matrix
 Wsp = Create_SpatialGraphWeight(HSI_clean, sigma_sp);
 
-[L_list, B_list, lam_max_glob, info_l] = ...
-    Create_GraphWeight_GLR_segmentwise(HSI_clean, opts_GLR);
-K     = size(L_list,1);    % = n3-1
-segID = info_l.labels;     % [n1 x n2] segment index (1..S)
+[L_delta_cpu, B_cpu, lam_max_vec, info_l] = ...
+    Create_GraphWeight_GLR_SW(HSI_clean, opts_GLR);
 
-lam_max_Ldelta = lam_max_glob;  % ステップサイズ用
+% GPU に載せる
+B = gpuArray(single(B_cpu));          % [K x K x S], gpuArray-single
+L_delta = gpuArray(single(L_delta_cpu));
+
+% セグメントラベルも GPU で使えるようにしておく
+segID_gpu = gpuArray(int32(info_l.labels));   % [n1 x n2]
+S_seg     = size(B,3);                        % セグメント数
+K         = size(B,1);                        % K = n3-1
+
+% % lam_max_vec: [S x 1] (single, CPU)
+% lam_max_Ldelta = max(lam_max_vec(:));        % scalar single
+% lam_max_Ldelta = max(single(lam_max_Ldelta), 0);
+
+% lam_max_vec: [S x 1] single
+lam_max_vec(~isfinite(lam_max_vec)) = 0;          % NaN/Inf を 0 に
+lam_max_Ldelta = max(lam_max_vec(:));            % スカラー
+lam_max_Ldelta = max(single(lam_max_Ldelta), 0); % 念のためクリップ
 
 lambda_sp = sum(abs(Wsp.*Dsp(HSI_clean)), "all") * lambda_rho_sp;
 
@@ -151,24 +165,23 @@ for i = 1:maxiter
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Updating Primal Variables
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    % ---- A3^T(Y3) : segment-wise GLR contribution ----
-    Y3_resh = reshape(Y3, [], K);              % [MN x K]
-    tmp_resh = zeros(size(Y3_resh), 'like', Y3_resh);
-    
-    S = size(B_list, 3);                       % #segments
-    
-    segID_lin = segID(:);                      % [MN x 1], CPU 配列でもOK
-    
-    for s = 1:S
-        idx = find(segID_lin == s);            % そのセグメントに属する画素インデックス
-        if isempty(idx), continue; end
-        B_s = B_list(:,:,s);                   % [K x K], gpuArray(single) を想定
-        % Y3(idx,:) * B_s^T
-        tmp_resh(idx, :) = Y3_resh(idx,:) * B_s.';   % [|idx| x K]
+    % ---- A3^T(Y3) の計算：GLRの寄与（セグメントごと）----
+    Y3_2D  = reshape(Y3, [], K);              % [MN x K]
+    tmp_2D = zeros(size(Y3_2D), 'like', Y3_2D);
+
+    segID_lin = segID_gpu(:);                 % [MN x 1], int32
+
+    for s = 1:S_seg
+        idx = (segID_lin == s);               % logical [MN x 1] on GPU
+        if ~any(idx, 'all'); continue; end
+        Ys   = Y3_2D(idx,:);                  % [#pix_s x K]
+        Bs   = B(:,:,s);                      % [K x K], gpuArray
+        tmp_2D(idx,:) = Ys * Bs.';            % [#pix_s x K]
     end
     
-    tmp   = reshape(tmp_resh, n1, n2, K);      % n1 x n2 x K
-    A3tY3 = DstGLR(tmp);                       % n1 x n2 x n3
+    tmp   = reshape(tmp_2D, n1, n2, K);       % n1 x n2 x K
+    A3tY3 = DstGLR(tmp);                      % n1 x n2 x n3
+
 
     U_tmp   = U - gamma1_U*(Dst(Dt(Y1)) + Dspt(Wsp.*Y2) + A3tY3 + Y4);
     S_tmp   = S - gamma1_S*Y5;
@@ -200,23 +213,21 @@ for i = 1:maxiter
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Updating Y3
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    tmp_ds = Ds_GLR(U_res);                 % n1 x n2 x K
-    tmp_ds_resh = reshape(tmp_ds, [], K);   % [MN x K]
-    tmp_resh = zeros(size(tmp_ds_resh), 'like', tmp_ds_resh);
+    tmp    = Ds_GLR(U_res);                  % n1 x n2 x K
+    tmp_2D = reshape(tmp, [], K);            % [MN x K]
+    tmp2_2D = zeros(size(tmp_2D), 'like', tmp_2D);
     
-    S = size(B_list,3);
-    segID_lin = segID(:);
-    
-    for s = 1:S
-        idx = find(segID_lin == s);
-        if isempty(idx), continue; end
-        B_s = B_list(:,:,s);                % [K x K]
-        tmp_resh(idx,:) = tmp_ds_resh(idx,:) * B_s;   % [|idx| x K]
+    for s = 1:S_seg
+        idx = (segID_lin == s);              % same segID_lin as above
+        if ~any(idx, 'all'); continue; end
+        ts   = tmp_2D(idx,:);                % [#pix_s x K]
+        Bs   = B(:,:,s);                     % [K x K]
+        tmp2_2D(idx,:) = ts * Bs;            % [#pix_s x K]
     end
     
-    tmp = reshape(tmp_resh, n1, n2, K);     % n1 x n2 x K
-    Y3_tmp  = Y3 + gamma2 * tmp;
-    Y3_next = (lambda2 / (lambda2 + gamma2)) * Y3_tmp;   % prox_{γ g*} の閉形式
+    tmp    = reshape(tmp2_2D, n1, n2, K);    % n1 x n2 x K
+    Y3_tmp = Y3 + gamma2 * tmp;
+    Y3_next = (lambda2 / (lambda2 + gamma2)) * Y3_tmp;
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Updating Y4
