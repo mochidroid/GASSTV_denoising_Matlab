@@ -1,5 +1,5 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% f(U,S,T) = |D(Ds(U))|_1 + \lambda1|WspDsp(U)|_{1or2} + \lambda2|WsDsU|_{1or2} +
+% f(U,S,T) = |D(Ds(U))|_1 + \lambda1|WDsp(U)|_{1} + \lambda2|WsDsU|_{2} +
 %             L1ball(S) + L1ball(T) + L2ball(U+S+T) + box constraint(U) + Dv(T)=0
 %
 % f1(U,S,T) = 0
@@ -7,27 +7,14 @@
 % f3(U,S,T) = |D(Ds(U))|_1 + \lambda1|WspDsp(U)|_{1or2} + \lambda2|WsDsU|_{1or2} +
 %              box constraint(U) + L1ball(S) + L1ball(T) + Dv(T)=0
 %
-% A = (DDs O O; WsDs O O; I O O; O I O; O O I; O O Dv)
-%
-% Algorithm is based on Naganuma's P-PDS
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% f(U,S) = |D(Ds(U))|_1 + \lambda1|WspDsp(U)|_{1or2} + \lambda2|WsDsU|_{1or2} +
-%             L2ball(U+S) + box constraint(U) + L1ball(S)
-%
-% f1(U,S) = 0
-% f2(U,S) = L2ball(U+S)
-% f3(U,S) = |D(Ds(U))|_1 + \lambda1|WspDsp(U)|_{1or2} + \lambda2|WsDsU|_{1or2} +
-%          box constraint(U) + L1ball(S)
-%
-% A = (DDs O; WspDsp O; WsDs O; I O; O I)
+% A = (DDl O O; WspDsp O O; WlDl O O; I O O; O I O; O O I; O O Dv)
 %
 % Algorithm is based on Naganuma's P-PDS
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 function [HSI_restored, removed_noise, output] ...
-     = func_GASSTV_GLR_SW_Const_OG_gst_for_denoising(HSI_clean, HSI_noisy, params)
-fprintf('** Running func_GASSTV_GLR_SW_Const_OG_gst_for_denoising **\n');
+     = func_GASSTV_GLR_SW_NL_OG_gst_for_denoising(HSI_clean, HSI_noisy, params)
+fprintf('** Running func_GASSTV_GLR_SW_NL_OG_gst_for_denoising **\n');
 HSI_clean = single(HSI_clean);
 HSI_noisy  = single(HSI_noisy);
 HSI_noisy_gpu = gpuArray(single(HSI_noisy));
@@ -36,20 +23,72 @@ HSI_noisy_gpu = gpuArray(single(HSI_noisy));
 epsilon         = gpuArray(single(params.epsilon));
 alpha           = gpuArray(single(params.alpha));
 beta            = gpuArray(single(params.beta));
-sigma_sp        = params.sigma_sp;
-% sigma_s         = single(params.sigma_s);
 lambda_rho_sp   = gpuArray(single(params.lambda_rho_sp));
 lambda2         = gpuArray(single(params.lambda2));
-num_segments    = single(params.num_segments);
 maxiter         = gpuArray(single(params.maxiter));
 stopcri         = gpuArray(single(params.stopcri));
 
-opts_GLR.num_segments = num_segments;
+opts_sp.patch_rad   = params.patch_rad;
+% opts_sp.search_rad  = params.search_rad;
+opts_sp.search_rad  = 40;
+opts_sp.k_nn        = params.k_nn;
+opts_sp.sigma_sp    = params.sigma_sp;
+
+opts_l.num_segments = params.num_segments;
+% opts_l.k_lap        = params.k_lap;
+opts_l.sigma_l      = params.sigma_l;
 
 
 %% Setting params
 dispiter    = unique([1:10, 1000:1000:maxiter]);
 dispband    = round(n3/2);
+
+
+%% Setting operators
+% Difference operators with Neumann boundary
+% Dsp     = @(z) D4_Neumann_GPU(z);
+% Dspt    = @(z) D4t_Neumann_GPU(z);
+D       = @(z) cat(4, z([2:end, end],:,:) - z, z(:,[2:end, end],:) - z);
+Dt      = @(z) cat(1, -z(1, :, :, 1), -z(2:end-1, :, :, 1) + z(1:end-2, :, :, 1), z(end-1, :, :, 1)) ...
+                + cat(2, -z(:, 1, :, 2), -z(:, 2:end-1, :, 2) + z(:, 1:end-2, :, 2), z(:, end-1, :, 2));
+Dv      = @(z) z([2:end, end],:,:) - z;
+Dvt     = @(z) cat(1, -z(1, :, :), -z(2:(n1-1), :, :) + z(1:(n1-2), :, :), z(n1-1, :, :));
+Dl      = @(z) z(:, :, [2:end, end], :) - z;
+Dlt     = @(z) cat(3, -z(:, :, 1), -z(:, :, 2:n3-1) + z(:, :, 1:n3-2), z(:, :, n3-1));
+
+Ds_GLR  = @(z) z(:, :, 2:end) - z(:,:,1:end-1);
+DstGLR  = @(z) cat(3, -z(:, :, 1), -z(:, :, 2:n3-1) + z(:, :, 1:n3-2), z(:, :, n3-1));
+
+
+[Gsp, E_sp, info_sp] = Create_NLSpatialGraphTV(HSI_clean, opts_sp);
+
+[L_delta_cpu, B_cpu, lam_max_vec, info_l] = ...
+    Create_GraphWeight_GLR_SW(HSI_clean, opts_l);
+
+% GPU に載せる
+B = gpuArray(single(B_cpu));          % [K x K x S], gpuArray-single
+L_delta = gpuArray(single(L_delta_cpu));
+
+% セグメントラベルも GPU で使えるようにしておく
+segID_gpu = gpuArray(int32(info_l.labels));   % [n1 x n2]
+S_seg     = size(B,3);                        % セグメント数
+K         = size(B,1);                        % K = n3-1
+
+% % lam_max_vec: [S x 1] (single, CPU)
+% lam_max_Ldelta = max(lam_max_vec(:));        % scalar single
+% lam_max_Ldelta = max(single(lam_max_Ldelta), 0);
+
+% lam_max_vec: [S x 1] single
+lam_max_vec(~isfinite(lam_max_vec)) = 0;          % NaN/Inf を 0 に
+lam_max_Ldelta = max(lam_max_vec(:));            % スカラー
+lam_max_Ldelta = max(single(lam_max_Ldelta), 0); % 念のためクリップ
+
+WDsp  = @(U) apply_G_sp(U, Gsp);                        % [E_sp x n3]
+WDspt = @(Y) apply_Gt_sp(Y, Gsp, n1, n2, n3);           % [n1 x n2 x n3]
+
+
+% lambda_sp = sum(abs(Wsp.*Dsp(HSI_clean)), "all") * lambda_rho_sp;
+lambda_sp = sum(abs(WDsp(HSI_clean)), 'all') * lambda_rho_sp;
 
 
 %% Initializing primal and dual variables
@@ -85,7 +124,8 @@ T = zeros([n1, n2, n3], 'single', 'gpuArray');
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 Y1 = zeros([n1, n2, n3, 2], 'single', 'gpuArray');
-Y2 = zeros([n1, n2, n3, 4], 'single', 'gpuArray');
+% Y2 = zeros([n1, n2, n3, 4], 'single', 'gpuArray');
+Y2 = zeros([E_sp, n3], 'single','gpuArray');
 Y3 = zeros([n1, n2, n3-1], 'single', 'gpuArray');
 Y4 = zeros([n1, n2, n3], 'single', 'gpuArray');
 Y5 = zeros([n1, n2, n3], 'single', 'gpuArray');
@@ -93,53 +133,23 @@ Y6 = zeros([n1, n2, n3], 'single', 'gpuArray');
 Y7 = zeros([n1, n2, n3], 'single', 'gpuArray');
 
 
-%% Setting operators
-% Difference operators with Neumann boundary
-Dsp     = @(z) D4_Neumann_GPU(z);
-Dspt    = @(z) D4t_Neumann_GPU(z);
-D       = @(z) cat(4, z([2:end, end],:,:) - z, z(:,[2:end, end],:) - z);
-Dt      = @(z) cat(1, -z(1, :, :, 1), -z(2:end-1, :, :, 1) + z(1:end-2, :, :, 1), z(end-1, :, :, 1)) ...
-                + cat(2, -z(:, 1, :, 2), -z(:, 2:end-1, :, 2) + z(:, 1:end-2, :, 2), z(:, end-1, :, 2));
-Dv      = @(z) z([2:end, end],:,:) - z;
-Dvt     = @(z) cat(1, -z(1, :, :), -z(2:(n1-1), :, :) + z(1:(n1-2), :, :), z(n1-1, :, :));
-Ds      = @(z) z(:, :, [2:end, end], :) - z;
-Dst     = @(z) cat(3, -z(:, :, 1), -z(:, :, 2:n3-1) + z(:, :, 1:n3-2), z(:, :, n3-1));
-
-Ds_GLR  = @(z) z(:, :, 2:end) - z(:,:,1:end-1);
-DstGLR  = @(z) cat(3, -z(:, :, 1), -z(:, :, 2:n3-1) + z(:, :, 1:n3-2), z(:, :, n3-1));
-
-% Graph based weight matrix
-Wsp = Create_SpatialGraphWeight(HSI_clean, sigma_sp);
-
-[L_delta_cpu, B_cpu, lam_max_vec, info_l] = ...
-    Create_GraphWeight_GLR_SW(HSI_clean, opts_GLR);
-
-% GPU に載せる
-B = gpuArray(single(B_cpu));          % [K x K x S], gpuArray-single
-L_delta = gpuArray(single(L_delta_cpu));
-
-% セグメントラベルも GPU で使えるようにしておく
-segID_gpu = gpuArray(int32(info_l.labels));   % [n1 x n2]
-S_seg     = size(B,3);                        % セグメント数
-K         = size(B,1);                        % K = n3-1
-
-% % lam_max_vec: [S x 1] (single, CPU)
-% lam_max_Ldelta = max(lam_max_vec(:));        % scalar single
-% lam_max_Ldelta = max(single(lam_max_Ldelta), 0);
-
-% lam_max_vec: [S x 1] single
-lam_max_vec(~isfinite(lam_max_vec)) = 0;          % NaN/Inf を 0 に
-lam_max_Ldelta = max(lam_max_vec(:));            % スカラー
-lam_max_Ldelta = max(single(lam_max_Ldelta), 0); % 念のためクリップ
-
-lambda_sp = sum(abs(Wsp.*Dsp(HSI_clean)), "all") * lambda_rho_sp;
-
 
 %% Setting stepsize parameters
-gamma1_U    = gpuArray(single(1/(8*4 + 16 + 4 * lam_max_Ldelta  + 1)));
-% gamma1_U    = gpuArray(single(1/(8*4 + 4 + 1)));
-gamma1_S    = gpuArray(single(1));
-gamma1_T    = gpuArray(single(1/(4 + 1)));
+sq_opnorm_D = 8;
+sq_opnorm_Dl = 4;
+sq_opnorm_Dv = 4;
+
+sq_opnorm_WDsp = info_sp.normG_sq_upper;
+sq_opnorm_Wl   = lam_max_Ldelta;
+
+
+sq_opnorm_U = sq_opnorm_D * sq_opnorm_Dl + sq_opnorm_WDsp + sq_opnorm_Dl*sq_opnorm_Wl + 1;
+sq_opnorm_S = 1;
+sq_opnorm_T = sq_opnorm_Dv + 1;
+
+gamma1_U    = gpuArray(single(1/sq_opnorm_U));
+gamma1_S    = gpuArray(single(1/sq_opnorm_S));
+gamma1_T    = gpuArray(single(1/sq_opnorm_T));
 gamma2      = gpuArray(single(1/3));
 % gamma2      = gpuArray(single(1/2));
 
@@ -180,8 +190,7 @@ for i = 1:maxiter
     tmp   = reshape(tmp_2D, n1, n2, K);       % n1 x n2 x K
     A3tY3 = DstGLR(tmp);                      % n1 x n2 x n3
 
-
-    U_tmp   = U - gamma1_U*(Dst(Dt(Y1)) + Dspt(Wsp.*Y2) + A3tY3 + Y4);
+    U_tmp   = U - gamma1_U*(Dlt(Dt(Y1)) + WDspt(Y2) + A3tY3 + Y4);
     S_tmp   = S - gamma1_S*Y5;
     T_tmp   = T - gamma1_T.*(Y6 + Dvt(Y7));
 
@@ -199,14 +208,14 @@ for i = 1:maxiter
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Updating Y1
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    Y1_tmp  = Y1 + gamma2*D(Ds(U_res));
+    Y1_tmp  = Y1 + gamma2*D(Dl(U_res));
     Y1_next = Y1_tmp - gamma2*ProxL1norm(Y1_tmp/gamma2, 1/gamma2);
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Updating Y2
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    Y2_tmp  = Y2 + gamma2*Wsp.*(Dsp(U_res));
-    Y2_next = Y2_tmp - gamma2*ProjFastL1Ball(Y2_tmp, lambda_sp);
+    Y2_tmp  = Y2 + gamma2*(WDsp(U_res));
+    Y2_next = Y2_tmp - gamma2*ProjFastL1Ball(Y2_tmp/gamma2, lambda_sp);
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Updating Y3
@@ -225,7 +234,7 @@ for i = 1:maxiter
     
     tmp    = reshape(tmp2_2D, n1, n2, K);    % n1 x n2 x K
     Y3_tmp = Y3 + gamma2 * tmp;
-    Y3_next = (lambda2 / (lambda2 + gamma2)) * Y3_tmp;
+    Y3_next = (lambda2 / (lambda2 + gamma2)) * Y3_tmp;   % prox_{γ g*} の閉形式
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Updating Y4
@@ -344,5 +353,27 @@ output.running_time           = gather(running_time(1:output.iter));
 
 output.l2ball                 = gather(l2ball(1:output.iter));
 
-output.Wsp                    = gather(Wsp);
+output.Gsp                    = gather(Gsp);
+output.Esp                    = E_sp;
+output.info_sp                = info_sp;
+output.info_l                 = info_l;
 output.L_delta                = gather(L_delta);
+end
+
+
+%% subfunctions
+function Y = apply_G_sp(U, G_sp)
+% U: [n1 x n2 x n3] (gpu/single)
+% Y: [E x n3]       (gpu/single)   ・・・各バンドごとに G' * u_b
+[n1,n2,n3] = size(U);
+N = n1*n2; E = size(G_sp,2);
+U2 = reshape(U, [N, n3]);             % N x n3
+Y  = (G_sp.' * U2);                    % E x n3
+end
+
+function U = apply_Gt_sp(Y, G_sp, n1, n2, n3)
+% Y: [E x n3], 返り値U: [n1 x n2 x n3] ・・・各バンドごとに G * y_b
+N = n1*n2;
+U2 = G_sp * Y;                         % N x n3
+U  = reshape(U2, [n1, n2, n3]);
+end
