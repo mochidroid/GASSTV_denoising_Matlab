@@ -44,8 +44,8 @@ images = {...
     "PaviaU64", ...
 };
 
-idc_images = 1:numel(images);
-% idc_images = 1;
+% idc_images = 1:numel(images);
+idc_images = [2, 1];
 
 
 idx_exp = 0;

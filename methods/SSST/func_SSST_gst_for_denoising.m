@@ -38,7 +38,7 @@ saverate    = gpuArray(single(1000));
 load("dir_save_folder.mat", "dir_save_folder")
 tmp_save_folder = fullfile(dir_save_folder, "tmp_save");
 mkdir(tmp_save_folder);
-tmp_save_name = @(iter) fullfile(tmp_save_folder, append("SSST_iter", iter, ".mat"));
+tmp_save_name = @(iter) fullfile(tmp_save_folder, append("SSST_iter", num2str(iter), ".mat"));
 
     
 
