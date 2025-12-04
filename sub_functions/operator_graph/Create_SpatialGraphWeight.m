@@ -1,4 +1,4 @@
-function [Wsp] = Create_SpatialGraphWeight(X, sigma_sp)
+function [Wsp, rho_sp] = Create_SpatialGraphWeight(X, sigma_sp)
 % Creating graph based weight matrix
 guide_image = mean(X, 3);
 [n1,n2,n3] = size(X);
@@ -36,3 +36,19 @@ Wsp = reshape(W_mat, [n1, n2, n3, 4]);
 Wsp = single(Wsp);
 
 % implay(cat(2, W(:,:,:,1), W(:,:,:,2), W(:,:,:,3), W(:,:,:,4)))
+
+% Estimating radius of spatial graph
+% (A) ガイド画像の空間グラフ差分値 (1バンドあたり)
+%     Inf（境界）を除外して、重み付き差分の総和を計算
+valid_mask = isfinite(grad_mat);
+guide_weighted_diff = W_mat_tmp(valid_mask) .* abs(grad_mat(valid_mask));
+val_sp_guide = sum(guide_weighted_diff(:));
+
+% (B) 各バンド毎の平均輝度値ベクトルとその総和
+%     spatial mean per band -> sum over bands
+mean_lum_vec = squeeze(mean(mean(X, 1), 2)); 
+sum_lum = sum(mean_lum_vec);
+
+rho_sp = single(val_sp_guide * sum_lum);
+
+end
