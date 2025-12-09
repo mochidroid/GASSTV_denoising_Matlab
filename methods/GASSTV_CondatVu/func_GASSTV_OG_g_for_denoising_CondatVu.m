@@ -27,7 +27,7 @@
 
 function [HSI_restored, removed_noise, output] ...
      = func_GASSTV_OG_g_for_denoising_CondatVu(HSI_clean, HSI_noisy, params)
-fprintf('** Running func_GASSTV_OG_gs_for_denoising_CondatVu **\n');
+fprintf('** Running func_GASSTV_OG_g_for_denoising_CondatVu **\n');
 HSI_clean = single(HSI_clean);
 HSI_noisy  = single(HSI_noisy);
 HSI_noisy_gpu = gpuArray(single(HSI_noisy));
