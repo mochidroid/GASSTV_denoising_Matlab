@@ -19,7 +19,7 @@ function [L_delta, B, lam_max_Ldelta, info_l] = Create_GraphWeight_GLR_SW_Med(X,
 K = n3 - 1;
 
 % ---- defaults ----
-if ~isfield(opts,'num_segments'), opts.num_segments = 50; end
+if ~isfield(opts,'num_segments'), opts.num_segments = 5; end
 if ~isfield(opts,'k_lap'),        opts.k_lap        = min(10, max(0,K-1)); end
 if ~isfield(opts,'sigma_l'),      opts.sigma_l      = "med"; end
 if ~isfield(opts, 'order_filt'), opts.order_filt = 3; end
