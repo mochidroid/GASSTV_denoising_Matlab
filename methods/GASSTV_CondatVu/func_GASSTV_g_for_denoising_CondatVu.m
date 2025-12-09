@@ -26,16 +26,16 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 function [HSI_restored, removed_noise, output] ...
-     = func_GASSTV_OG_gst_for_denoising_CondatVu(HSI_clean, HSI_noisy, params)
-fprintf('** Running func_GASSTV_OG_gst_for_denoising_CondatVu **\n');
+     = func_GASSTV_g_for_denoising_CondatVu(HSI_clean, HSI_noisy, params)
+fprintf('** Running func_GASSTV_g_for_denoising_CondatVu **\n');
 HSI_clean = single(HSI_clean);
 HSI_noisy  = single(HSI_noisy);
 HSI_noisy_gpu = gpuArray(single(HSI_noisy));
 [n1, n2, n3] = size(HSI_noisy);
 
 epsilon         = gpuArray(single(params.epsilon));
-alpha           = gpuArray(single(params.alpha));
-beta            = gpuArray(single(params.beta));
+% alpha           = gpuArray(single(params.alpha));
+% beta            = gpuArray(single(params.beta));
 % sigma_s         = single(params.sigma_s);
 lambda_rho_sp   = gpuArray(single(params.lambda_rho_sp));
 lambda2         = gpuArray(single(params.lambda2));
@@ -68,8 +68,8 @@ dispband    = round(n3/2);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 U = zeros([n1, n2, n3], 'single', 'gpuArray');
-S = zeros([n1, n2, n3], 'single', 'gpuArray');
-T = zeros([n1, n2, n3], 'single', 'gpuArray');
+% S = zeros([n1, n2, n3], 'single', 'gpuArray');
+% T = zeros([n1, n2, n3], 'single', 'gpuArray');
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % dual variables
@@ -86,7 +86,7 @@ T = zeros([n1, n2, n3], 'single', 'gpuArray');
 
 Y1 = zeros([n1, n2, n3, 2], 'single', 'gpuArray');
 Y2 = zeros([n1, n2, n3, 4], 'single', 'gpuArray');
-Y3 = zeros([n1, n2, n3], 'single', 'gpuArray');
+% Y3 = zeros([n1, n2, n3], 'single', 'gpuArray');
 Y4 = zeros([n1, n2, n3], 'single', 'gpuArray');
 
 
@@ -97,8 +97,8 @@ Dspt    = @(z) D4t_Neumann_GPU(z);
 D       = @(z) cat(4, z([2:end, end],:,:) - z, z(:,[2:end, end],:) - z);
 Dt      = @(z) cat(1, -z(1, :, :, 1), -z(2:end-1, :, :, 1) + z(1:end-2, :, :, 1), z(end-1, :, :, 1)) ...
                 + cat(2, -z(:, 1, :, 2), -z(:, 2:end-1, :, 2) + z(:, 1:end-2, :, 2), z(:, end-1, :, 2));
-Dv      = @(z) z([2:end, end],:,:) - z;
-Dvt     = @(z) cat(1, -z(1, :, :), -z(2:(n1-1), :, :) + z(1:(n1-2), :, :), z(n1-1, :, :));
+% Dv      = @(z) z([2:end, end],:,:) - z;
+% Dvt     = @(z) cat(1, -z(1, :, :), -z(2:(n1-1), :, :) + z(1:(n1-2), :, :), z(n1-1, :, :));
 Dl      = @(z) z(:, :, [2:end, end], :) - z;
 Dlt     = @(z) cat(3, -z(:, :, 1), -z(:, :, 2:n3-1) + z(:, :, 1:n3-2), z(:, :, n3-1));
 
@@ -112,7 +112,7 @@ lambda_sp = sum(abs(Wsp.*Dsp(HSI_clean)), "all") * lambda_rho_sp;
 % (B) Spectral Graph Laplacians
 % returns L_delta: [K x K x S], B: [K x K x S], lam_max: [S x 1]
 [L_delta_cpu, ~, lam_max_vec, info_l] = ...
-    Create_SpectralGraphLaplacian(HSI_clean, num_segments, sigma_l, k_lap, order_filt);
+    Create_SpectralGraphLaplacian(HSI_noisy, num_segments, sigma_l, k_lap, order_filt);
 
 L_delta = gpuArray(single(L_delta_cpu)); % Upload Laplacians to GPU
 segID_gpu = gpuArray(int32(info_l.labels)); % [n1 x n2] Segment labels
@@ -134,22 +134,23 @@ spopnorm_Dvh = 8;
 spopnorm_Dl = 4;
 spopnorm_Wsp = 1;
 spopnorm_Dsp = 16;
-spopnorm_Dv = 4;
+% spopnorm_Dv = 4;
 
 
 gamma1_U    = gpuArray(single(1/((Lipschitz_GLR/2) + ...
                 spopnorm_Dvh*spopnorm_Dl + spopnorm_Wsp*spopnorm_Dsp + 1)));
-gamma1_S    = gpuArray(single(1));
-gamma1_T    = gpuArray(single(1/(spopnorm_Dv + 1)));
-gamma2      = gpuArray(single(1/3));
+% gamma1_S    = gpuArray(single(1));
+% gamma1_T    = gpuArray(single(1/(spopnorm_Dv + 1)));
+% gamma2      = gpuArray(single(1/3));
+gamma2      = gpuArray(single(1));
 
 
 %% main loop (P-PDS)
 fprintf('~~~ P-PDS STARTS ~~~\n');
 
 converge_rate_U = zeros([1, maxiter], 'single');
-converge_rate_S = zeros([1, maxiter], 'single');
-converge_rate_T = zeros([1, maxiter], 'single');
+% converge_rate_S = zeros([1, maxiter], 'single');
+% converge_rate_T = zeros([1, maxiter], 'single');
 converge_rate_N = zeros([1, maxiter], 'single');
 move_mpsnr = zeros([1, maxiter], 'single');
 move_mssim = zeros([1, maxiter], 'single');
@@ -171,16 +172,16 @@ for i = 1:maxiter
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Updating S
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    S_tmp   = S - gamma1_S*Y4;
-    S_next  = ProjFastL1Ball(S_tmp, alpha);
-    S_res   = 2*S_next - S;
+    % S_tmp   = S - gamma1_S*Y4;
+    % S_next  = ProjFastL1Ball(S_tmp, alpha);
+    % S_res   = 2*S_next - S;
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Updating T
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    T_tmp   = T - gamma1_T*(Dvt(Y3) + Y4);
-    T_next  = ProjFastL1Ball(T_tmp, beta);
-    T_res   = 2*T_next - T;
+    % T_tmp   = T - gamma1_T*(Dvt(Y3) + Y4);
+    % T_next  = ProjFastL1Ball(T_tmp, beta);
+    % T_res   = 2*T_next - T;
 
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -198,36 +199,39 @@ for i = 1:maxiter
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Updating Y3
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    Y3_next = Y3 + gamma2*Dv(T_res);
+    % Y3_next = Y3 + gamma2*Dv(T_res);
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Updating Y4
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    Y4_tmp  = Y4 + gamma2*(U_res + S_res + T_res);    
+    % Y4_tmp  = Y4 + gamma2*(U_res + S_res + T_res); 
+    Y4_tmp  = Y4 + gamma2*(U_res);
     Y4_next = Y4_tmp - gamma2*ProjL2ball(Y4_tmp/gamma2, HSI_noisy_gpu, epsilon);
     
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Calculating error
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    N = HSI_noisy - U - S - T;
-    N_next = HSI_noisy - U_next - S_next - T_next;
+    % N = HSI_noisy - U - S - T;
+    % N_next = HSI_noisy - U_next - S_next - T_next;
+    N = HSI_noisy - U;
+    N_next = HSI_noisy - U_next;
 
     converge_rate_U(i) = norm(U_next(:) - U(:),2)/norm(U(:),2);
-    converge_rate_S(i) = norm(S_next(:) - S(:),2)/norm(S(:),2);
-    converge_rate_T(i) = norm(T_next(:) - T(:),2)/norm(T(:),2);
+    % converge_rate_S(i) = norm(S_next(:) - S(:),2)/norm(S(:),2);
+    % converge_rate_T(i) = norm(T_next(:) - T(:),2)/norm(T(:),2);
     converge_rate_N(i) = norm(N_next(:) - N(:),2)/norm(N(:),2);
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Updating all variables
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     U   = U_next;
-    S   = S_next;
-    T   = T_next;
+    % S   = S_next;
+    % T   = T_next;
     
     Y1  = Y1_next;
     Y2  = Y2_next;
-    Y3  = Y3_next;
+    % Y3  = Y3_next;
     Y4  = Y4_next;
 
 
@@ -282,13 +286,14 @@ HSI_restored                    = gather(U);
 output.iter                     = gather(i);
 removed_noise.all_noise         = HSI_noisy - HSI_restored;
 removed_noise.sparse_noise      = gather(S);
-removed_noise.stripe_noise      = gather(T);
-removed_noise.gaussian_noise    = HSI_noisy - HSI_restored - ...
-                                    removed_noise.sparse_noise - removed_noise.stripe_noise;
+% removed_noise.stripe_noise      = gather(T);
+% removed_noise.gaussian_noise    = HSI_noisy - HSI_restored - ...
+%                                     removed_noise.sparse_noise - removed_noise.stripe_noise;
+removed_noise.gaussian_noise    = HSI_noisy - HSI_restored;
 
 output.converge_rate_U        = gather(converge_rate_U(1:output.iter));
-output.converge_rate_S        = gather(converge_rate_S(1:output.iter));
-output.converge_rate_T        = gather(converge_rate_T(1:output.iter));
+% output.converge_rate_S        = gather(converge_rate_S(1:output.iter));
+% output.converge_rate_T        = gather(converge_rate_T(1:output.iter));
 output.converge_rate_N        = gather(converge_rate_N(1:output.iter));
 
 output.move_mpsnr             = gather(move_mpsnr(1:output.iter));

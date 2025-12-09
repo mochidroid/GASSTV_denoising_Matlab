@@ -26,8 +26,8 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 function [HSI_restored, removed_noise, output] ...
-     = func_GASSTV_OG_gst_for_denoising_CondatVu(HSI_clean, HSI_noisy, params)
-fprintf('** Running func_GASSTV_OG_gst_for_denoising_CondatVu **\n');
+     = func_GASSTV_gst_for_denoising_CondatVu(HSI_clean, HSI_noisy, params)
+fprintf('** Running func_GASSTV_gst_for_denoising_CondatVu **\n');
 HSI_clean = single(HSI_clean);
 HSI_noisy  = single(HSI_noisy);
 HSI_noisy_gpu = gpuArray(single(HSI_noisy));
@@ -112,7 +112,7 @@ lambda_sp = sum(abs(Wsp.*Dsp(HSI_clean)), "all") * lambda_rho_sp;
 % (B) Spectral Graph Laplacians
 % returns L_delta: [K x K x S], B: [K x K x S], lam_max: [S x 1]
 [L_delta_cpu, ~, lam_max_vec, info_l] = ...
-    Create_SpectralGraphLaplacian(HSI_clean, num_segments, sigma_l, k_lap, order_filt);
+    Create_SpectralGraphLaplacian(HSI_noisy, num_segments, sigma_l, k_lap, order_filt);
 
 L_delta = gpuArray(single(L_delta_cpu)); % Upload Laplacians to GPU
 segID_gpu = gpuArray(int32(info_l.labels)); % [n1 x n2] Segment labels
