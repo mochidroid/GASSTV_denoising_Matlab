@@ -4,23 +4,19 @@ addpath(genpath("./sub_functions"));
 
 %% Selecting conditions
 noise_conditions = { ...
-    {0.1,   0.05,  0,     0,    0},     ... % g0.1 ps0.05 pt0 pd0
-    {0.1,   0.1,   0,     0,    0},     ... % g0.1 ps0.05 pt0 pd0
+    %g      ps     pt     tint  pd
     {0.1,   0,     0,     0,    0},     ... % g0.1 ps0 pt0
-    {0,     0,     0.05,  0.5,  0},     ... % g0 ps0 pt0.05
-    {0.05,  0.05,  0,     0,    0},     ... % g0.05 ps0.05 pt0
-    {0.1,   0.05,  0,     0,    0},     ... % g0.1 ps0.05 pt0
+    {0.05,  0.05,  0,     0,    0},     ... % g0.05 ps0.05 pt0 pd0
+    {0.1,   0.05,  0,     0,    0},     ... % g0.1 ps0.05 pt0 pd0
     {0.05,  0,     0.05,  0.5,  0},     ... % g0.05 ps0 pt0.05
     {0.1,   0,     0.05,  0.5,  0},     ... % g0.1 ps0 pt0.05
-    {0.05,  0.05,  0.05,  0.3,  0},     ... % g0.05 ps0.05 pt0.05
-    {0.1,   0.05,  0.05,  0.3,  0},     ... % g0.1 ps0.05 pt0.05
-    {0.05,  0.05,  0.05,  0.5,  0},     ... % g0.05 ps0.05 pt0.05
-    {0.1,   0.05,  0.05,  0.5,  0},     ... % g0.1 ps0.05 pt0.05
-    {0.05,  0.05,  0.05,  0.3,  0.001}, ... % g0.05 ps0.05 pt0.05 pd0.001
-    {0.1,   0.05,  0.05,  0.3,  0.001}, ... % g0.1 ps0.05 pt0.05 pd0.001
+    {0.05,  0.05,  0.05,  0.5,  0},     ... % g0.05 ps0.05 pt0.05 pd0
+    {0.1,   0.05,  0.05,  0.5,  0},     ... % g0.1 ps0.05 pt0.05 pd0
+    {0.1,   0,     0,     0,    0.01},  ... % g0.1 ps0 pt0 pd0.01
+    {0.1,   0.05,  0.05,  0.5,  0.01},  ... % g0.1 ps0.05 pt0.05 pd0.01
 };
 
-idx_noise_condition = 12;
+idx_noise_condition = 7;
 
 images = {... 
     "JasperRidge", ...
@@ -176,23 +172,23 @@ legend("GT", "Noisy", "Med. Filt.", "Location", "west")
 
 
 %% verifying med. filt. and moving average 
-% spectrum = spectra_graphs_V(:, 1);  % 1本の代表スペクトル
-% 
-% % 移動平均
-% s_movmean = movmean(spectrum, 5);
-% 
-% % メディアン
-% s_median = medfilt1(spectrum, 5);
-% 
-% % プロット比較
-% figure;
-% plot(spectrum, 'Color', [0.7 0.7 0.7]); hold on;
-% plot(s_movmean, 'b', 'LineWidth', 1.5);
-% plot(s_median, 'r', 'LineWidth', 1.5);
-% legend('Original', 'Moving Average', 'Median Filter');
-% title('Comparison of Filters');
-% xlabel('Band Index'); ylabel('Reflectance');
-% grid on;
+spectrum = spectra_graphs_V(:, 1);  % 1本の代表スペクトル
+
+% 移動平均
+s_movmean = movmean(spectrum, 5);
+
+% メディアン
+s_median = medfilt1(spectrum, 5);
+
+% プロット比較
+figure;
+plot(spectrum, 'Color', [0.7 0.7 0.7]); hold on;
+plot(s_movmean, 'b', 'LineWidth', 1.5);
+plot(s_median, 'r', 'LineWidth', 1.5);
+legend('Original', 'Moving Average', 'Median Filter');
+title('Comparison of Filters');
+xlabel('Band Index'); ylabel('Reflectance');
+grid on;
 
 
 %% Comparing Oracle and simu radius
