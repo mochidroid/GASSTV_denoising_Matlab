@@ -66,11 +66,11 @@ maxiter = 20000;
 % GASSTV_CondatVu
 % params_GASSTV.sigma_sp = [0.01, 0.1, 1];
 GASSTV_CondatVu.sigma_sp = {"90", "med"};
-GASSTV_CondatVu.sigma_l = {"90", "med"};
+GASSTV_CondatVu.sigma_l = {"med"};
 GASSTV_CondatVu.lambda_rho_sp = [0.9, 1, 1.1];
 GASSTV_CondatVu.lambda2 = [0.1, 1, 10];
-GASSTV_CondatVu.num_segments = [3, 5, 10];
-% GASSTV_CondatVu.num_segments = [5];
+% GASSTV_CondatVu.num_segments = [3, 5, 10];
+GASSTV_CondatVu.num_segments = [4];
 GASSTV_CondatVu.order_filt = [5, 1];
 % GASSTV_CondatVu.order_filt = [5];
 methods_info(1) = struct( ...
@@ -115,7 +115,7 @@ methods_info(end+1) = struct( ...
         sprintf("l%.2g_%.2g_sig%s_%s_ns%d_fil%d_r%.2f_stop1e-%d", ...
         params.lambda_rho_sp, params.lambda2, params.sigma_sp, params.sigma_l, ...
         params.num_segments, params.order_filt, params.rho_radius, stopcri_idx), ...
-    "enable", true ...
+    "enable", false ...
 );
 
 % GASSTV_CondatVu_OG
