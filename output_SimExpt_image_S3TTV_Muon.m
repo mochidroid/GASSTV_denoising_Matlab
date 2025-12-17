@@ -7,9 +7,9 @@ addpath("func_metrics")
 
 %% Switching operator
 is_show_cropped_image = 1;
-% is_show_HSI = 1;
-% is_plot_psnr_and_ssim_per_band = 1;
-is_output_image = 1;
+is_show_HSI = 1;
+is_plot_psnr_and_ssim_per_band = 1;
+% is_output_image = 1;
 
 
 %% Selecting common parameters

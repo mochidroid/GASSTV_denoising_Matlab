@@ -14,7 +14,7 @@ noise_conditions = { ...
 };
 
 % idc_noise_conditions = 1:size(noise_conditions, 2);
-idc_noise_conditions = 2;
+idc_noise_conditions = 1;
 
 images = {...
     "JasperRidge64", ...
@@ -28,7 +28,7 @@ images = {...
 % };
 
 % idc_images = 1:numel(images);
-idc_images = 1;
+idc_images = 2;
 
 
 %% Setting common parameters
