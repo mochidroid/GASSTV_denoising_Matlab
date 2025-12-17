@@ -2,7 +2,7 @@ function  [HSI_noisy, hsi] = Load_real_HSI(set_image)
 %% Loading HSI
 switch set_image
     case 'IndianPines'
-        load('H:/マイドライブ/MATLAB_Shere/HSIData/IndianPine/Indian_pines.mat')
+        load('H:\マイドライブ\MATLAB_Share\HSIData\IndianPine\Indian_pines.mat')
         HSI_noisy = normalize01(indian_pines(1:end-25, 26:end, :));
         
     case 'Suwannee'

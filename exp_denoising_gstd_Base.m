@@ -121,14 +121,14 @@ methods_info(end+1) = struct( ...
 % GASSTV_CondatVu_OG
 % params_GASSTV.sigma_sp = [0.01, 0.1, 1];
 params_GASSTV.sigma_sp = {"90", "med"};
-params_GASSTV.sigma_l = {"90", "med"};
+params_GASSTV.sigma_l = {"med"};
 params_GASSTV.lambda_rho_sp = [0.9, 1, 1.1];
 % params_GASSTV.sigma_s = [0.01, 1];
 % params_GASSTV.lambda1 = [0.01, 0.1, 1];
 % params_GASSTV.lambda1 = [0.01];
 params_GASSTV.lambda2 = [0.1, 1, 10];
-params_GASSTV.num_segments = [3, 5, 10];
-% params_GASSTV.num_segments = [5];
+% params_GASSTV.num_segments = [3, 5, 10];
+params_GASSTV.num_segments = [4];
 % params_GASSTV.order_filt = [1, 3];
 params_GASSTV.order_filt = [5];
 methods_info(end+1) = struct( ...
