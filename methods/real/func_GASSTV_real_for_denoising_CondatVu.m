@@ -240,8 +240,8 @@ for i = 1:maxiter
     end
     % Displaying progress 
     if ismember(i, dispiter)
-        fprintf("Iter: %d, Error: %0.6f, MPSNR: %#.4g, MSSIM: %#.4g, Time: %0.2f.\n", ...
-            i, converge_rate_U(i), move_mpsnr(i), move_mssim(i), sum(running_time));
+        fprintf("Iter: %d, Error: %0.6f, Time: %0.2f.\n", ...
+            i, converge_rate_U(i), sum(running_time));
 
         figure(1)        
         subplot(2,2,1)
