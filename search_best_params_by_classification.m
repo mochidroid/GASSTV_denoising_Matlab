@@ -41,9 +41,13 @@ fprintf("GT Loaded. Size: %dx%d\n", size(GT_cropped,1), size(GT_cropped,2));
 % 比較したいパラメータ範囲を設定
 GASSTV_CondatVu.sigma_sp = {"90", "med"};
 GASSTV_CondatVu.sigma_l = {"med"};
+% GASSTV_CondatVu.sigma_l = {"90", "med"};
 GASSTV_CondatVu.lambda_rho_sp = [0.9, 1, 1.1];
-GASSTV_CondatVu.lambda2 = [0.1, 1, 10];
+% GASSTV_CondatVu.lambda_rho_sp = [0.7, 0.8, 0.9, 1, 1.1];
+% GASSTV_CondatVu.lambda2 = [0.1, 1, 10];
+GASSTV_CondatVu.lambda2 = [0.001, 0.01, 0.1, 1, 10];
 GASSTV_CondatVu.num_segments = [4];
+% GASSTV_CondatVu.num_segments = [3, 4, 5, 10];
 GASSTV_CondatVu.order_filt = [5, 1];
 
 stopcri_idx = 5;
@@ -51,6 +55,7 @@ stopcri = 10 ^ -stopcri_idx;
 maxiter = 20000;
 
 epsilon = 30;
+% epsilon = 20;
 alpha = 200;
 beta = 100;
 
