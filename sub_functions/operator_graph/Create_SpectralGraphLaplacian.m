@@ -15,6 +15,7 @@ function [L_delta, B, lam_max_Ldelta, info_l] = Create_SpectralGraphLaplacian(X,
 %   lam_max_Ldelta: [S x 1] 最大固有値 (single)
 %   info_l        : 構築情報（segID, representative spectra など）
 
+fprintf("~ Creating spectral graph ~\n")
 [n1, n2, n3] = size(X);
 K = n3 - 1;
 
@@ -152,6 +153,9 @@ end
 L_delta        = L_cpu_all;      % [K x K x S], double
 B              = B_cpu_all;      % [K x K x S], double
 lam_max_Ldelta = lam_max_all;    % [S x 1], single
+
+
+fprintf("sigma_l: %5f\n", val_sigma_l)
 
 % info for debug
 info_l = struct();

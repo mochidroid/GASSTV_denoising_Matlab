@@ -105,7 +105,7 @@ Dlt     = @(z) cat(3, -z(:, :, 1), -z(:, :, 2:n3-1) + z(:, :, 1:n3-2), z(:, :, n
 
 %% Constructng graphs
 % (A) Spatial Graph Weights
-Wsp = Create_SpatialGraphWeight(HSI_clean, sigma_sp);
+Wsp = Create_SpatialGraphWeight(HSI_noisy, sigma_sp);
 lambda_sp = sum(abs(Wsp.*Dsp(HSI_clean)), "all") * lambda_rho_sp;
 
 

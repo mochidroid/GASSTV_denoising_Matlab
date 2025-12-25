@@ -43,7 +43,7 @@ maxiter = 20000;
 % GASSTV_CondatVu
 % params_GASSTV.sigma_sp = [0.01, 0.1, 1];
 GASSTV_CondatVu.sigma_sp = {"90", "med"};
-GASSTV_CondatVu.sigma_l = {"med"};
+GASSTV_CondatVu.sigma_l = {"90"};
 GASSTV_CondatVu.lambda_rho_sp = [0.9, 1, 1.1];
 GASSTV_CondatVu.lambda2 = [0.1, 1, 10];
 % GASSTV_CondatVu.num_segments = [3, 5, 10];
