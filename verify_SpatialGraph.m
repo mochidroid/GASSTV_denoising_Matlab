@@ -24,7 +24,7 @@ images = {...
     "Beltsville", ...
 };
 
-idx_image = 3;
+idx_image = 1;
 
 
 %% Generating observation

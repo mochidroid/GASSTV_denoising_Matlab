@@ -1,4 +1,5 @@
 function [Wsp, rho_sp] = Create_SpatialGraphWeight(X, sigma_sp)
+fprintf("~ Creating spatial graph ~\n")
 % Creating graph based weight matrix
 guide_image = mean(X, 3);
 [n1,n2,n3] = size(X);
@@ -26,6 +27,8 @@ elseif sigma_sp == "90"
 else
     val_sigma_sp = sigma_sp;
 end
+
+fprintf("sigma sp: %5f\n", val_sigma_sp);
 
 % W_mat_tmp = exp(-(grad_mat.^2)./(sigma_x.^2)/2).*exp(-dist_mat./(sigma_l.^2)/2);
 W_mat_tmp = exp(-(grad_mat.^2)/(val_sigma_sp^2)/2);
