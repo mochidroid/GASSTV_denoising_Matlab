@@ -23,8 +23,8 @@ noise_conditions = { ...
 
 % idc_noise_conditions = 1:size(noise_conditions, 2);
 % idc_noise_conditions = [7, 6];
-% idc_noise_conditions = 7;
-idc_noise_conditions = 2:7;
+idc_noise_conditions = 7;
+% idc_noise_conditions = 1:7;
 % idc_noise_conditions = 1;
 % idc_noise_conditions = [5, 2];
 
@@ -35,15 +35,15 @@ images = {...
 };
 
 % idc_images = 1:numel(images);
-% idc_images = 1:2;
+idc_images = 1:2;
 % idc_images = 3;
-idc_images = 1;
+% idc_images = 1;
 
 
 %% Setting common parameters
 % rhos = {0.93, 0.95, 0.98};
-% rhos = {0.95};
-rhos = {0.98};
+rhos = {0.95};
+% rhos = {0.98};
 
 % epsilon_rho = 0.01;
 
@@ -83,7 +83,7 @@ methods_info(1) = struct( ...
         sprintf("l%.2g_%.2g_sig%s_%s_ns%d_fil%d_r%.2f_stop1e-%d", ...
         params.lambda_rho_sp, params.lambda2, params.sigma_sp, params.sigma_l, ...
         params.num_segments, params.order_filt, params.rho_radius, stopcri_idx), ...
-    "enable", true ...
+    "enable", false ...
 );
 
 
