@@ -15,17 +15,35 @@ grad_mat = guide_image(:).*ones(1, 4) - diff_mat;
 
 % dist_mat = [1, 1, 2, 2];
 
-if sigma_sp == "med"
-    diff_vals = abs(grad_mat(~isinf(grad_mat)));
-    val_sigma_sp = median(diff_vals(:));
-elseif sigma_sp == "90"
-    finite_mask = isfinite(grad_mat);
-    g = abs(grad_mat(finite_mask));
-    g0 = prctile(g, 90);   % representative gradient magnitude
-    w0 = 0.2;              % desired weight at g0
-    val_sigma_sp = max( single( g0 / sqrt(2*log(1/w0)) ), eps('single') );
+% if sigma_sp == "med"
+%     diff_vals = abs(grad_mat(~isinf(grad_mat)));
+%     val_sigma_sp = median(diff_vals(:));
+% elseif sigma_sp == "90"
+%     finite_mask = isfinite(grad_mat);
+%     g = abs(grad_mat(finite_mask));
+%     g0 = prctile(g, 90);   % representative gradient magnitude
+%     w0 = 0.2;              % desired weight at g0
+%     val_sigma_sp = max( single( g0 / sqrt(2*log(1/w0)) ), eps('single') );
+% else
+%     val_sigma_sp = sigma_sp;
+% end
+
+if ischar(sigma_sp) || isstring(sigma_sp)
+    switch lower(string(sigma_sp))
+        case "med"
+            diff_vals = abs(grad_mat(~isinf(grad_mat)));
+            val_sigma_sp = median(diff_vals(:));
+        case "90"
+            finite_mask = isfinite(grad_mat);
+            g = abs(grad_mat(finite_mask));
+            g0 = prctile(g, 90);   % representative gradient magnitude
+            w0 = 0.2;              % desired weight at g0
+            val_sigma_sp = max( single( g0 / sqrt(2*log(1/w0)) ), eps('single') );
+        otherwise
+            error('sigma_sp must be "med", "90", or a numeric value.');
+    end
 else
-    val_sigma_sp = sigma_sp;
+    val_sigma_sp  = double(sigma_sp);
 end
 
 fprintf("sigma sp: %5f\n", val_sigma_sp);
