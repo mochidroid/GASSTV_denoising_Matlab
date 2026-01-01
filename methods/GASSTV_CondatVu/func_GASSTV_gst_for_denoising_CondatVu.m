@@ -36,21 +36,20 @@ HSI_noisy_gpu = gpuArray(single(HSI_noisy));
 epsilon         = gpuArray(single(params.epsilon));
 alpha           = gpuArray(single(params.alpha));
 beta            = gpuArray(single(params.beta));
-% sigma_s         = single(params.sigma_s);
-lambda_rho_sp   = gpuArray(single(params.lambda_rho_sp));
-lambda2         = gpuArray(single(params.lambda2));
 maxiter         = gpuArray(single(params.maxiter));
 stopcri         = gpuArray(single(params.stopcri));
 
 % Spatial graph
 sigma_sp        = params.sigma_sp;
+lambda_rho_sp   = gpuArray(single(params.lambda_rho_sp));
 
 % Spectral graph
 sigma_l         = params.sigma_l;
 num_segments    = single(params.num_segments);
 order_filt      = single(params.order_filt);
+lambda2         = gpuArray(single(params.lambda2));
 
-k_lap = single(10);
+k_lap           = single(params.k_lap);
 
 
 %% Setting params
