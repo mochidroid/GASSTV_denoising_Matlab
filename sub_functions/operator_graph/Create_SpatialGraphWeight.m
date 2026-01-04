@@ -1,4 +1,4 @@
-function [Wsp, rho_sp] = Create_SpatialGraphWeight(X, sigma_sp)
+function [Wsp, rho_sp, val_sigma_sp] = Create_SpatialGraphWeight(X, sigma_sp)
 fprintf("~ Creating spatial graph ~\n")
 % Creating graph based weight matrix
 guide_image = mean(X, 3);

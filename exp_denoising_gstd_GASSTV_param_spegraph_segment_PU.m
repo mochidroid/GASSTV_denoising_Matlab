@@ -35,8 +35,8 @@ images = {...
 %     "PaviaU64", ...
 % };
 
-idc_images = 1:numel(images);
-% idc_images = 1;
+% idc_images = 1:numel(images);
+idc_images = 2;
 
 
 idx_exp = 0;
@@ -64,18 +64,18 @@ maxiter = 20000;
 
 %% Setting each methods info
 % GASSTV_CondatVu
+% GASSTV_CondatVu_OG_Med.sigma_sp = [0.01, 0.1, 1];
 % GASSTV_CondatVu.sigma_sp = {"90", "med"};
-% GASSTV_CondatVu.sigma_sp = {"med"};
-GASSTV_CondatVu.sigma_sp = [0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1];
-GASSTV_CondatVu.lambda_rho_sp = [0.7, 0.8, 0.9, 1, 1.1, 1.2];
-% GASSTV_CondatVu.lambda_rho_sp = [0.9];
+GASSTV_CondatVu.sigma_sp = {"90"};
+% GASSTV_CondatVu.lambda_rho_sp = [0.9, 1, 1.1];
+GASSTV_CondatVu.lambda_rho_sp = [1];
 
-GASSTV_CondatVu.sigma_l = {"med"};
-% GASSTV_CondatVu.sigma_l = {0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1};
+% GASSTV_CondatVu.sigma_l = {"med"};
+GASSTV_CondatVu.sigma_l = {0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1};
 GASSTV_CondatVu.lambda2 = [1];
 % GASSTV_CondatVu.lambda2 = [0.01, 0.05, 0.1, 0.5, 1, 5, 10];
-GASSTV_CondatVu.k_lap = [10];
 % GASSTV_CondatVu.k_lap = [2, 5, 8, 10, 15, 20, 50, 100];
+GASSTV_CondatVu.k_lap = [10];
 GASSTV_CondatVu.num_segments = [4];
 % GASSTV_CondatVu.num_segments = [2, 3, 4, 5, 6, 7, 8];
 % GASSTV_CondatVu.order_filt = [5, 1];
@@ -93,9 +93,9 @@ methods_info(1) = struct( ...
         GASSTV_CondatVu.num_segments, GASSTV_CondatVu.order_filt, GASSTV_CondatVu.k_lap, ...
         maxiter, stopcri, rhos}}, ...
     "get_params_savetext", @(params) ...
-        sprintf("l%.2g_%.2g_sig%d_%s_ns%d_fil%d_k%g_r%.2f_stop1e-%d", ...
+        sprintf("l%.2g_%.2g_sig%s_%g_ns%d_fil%d_r%.2f_stop1e-%d", ...
         params.lambda_rho_sp, params.lambda2, params.sigma_sp, params.sigma_l, ...
-        params.num_segments, params.order_filt, params.k_lap, ...
+        params.num_segments, params.order_filt, ...
         params.rho_radius, stopcri_idx), ...
     "enable", true ...
 );
