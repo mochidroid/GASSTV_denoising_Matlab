@@ -109,7 +109,8 @@ for s = 1:S
             [~, idx] = maxk(W_s(i,:), min(k_lap, K-1));
             Wk(i, idx) = W_s(i, idx);
         end
-        W_s = max(Wk, W_s.');  % symmetric
+        W_s = max(Wk, Wk.');  % symmetric
+        % W_s = min(Wk, Wk.');
     end
     
     % (d) Laplacian L_s = D - W_s
