@@ -47,8 +47,8 @@ stopcri = 10 ^ -stopcri_idx;
 maxiter = 20000;
 
 %% Method info (same as your experiment)
-ASSTV_CondatVu.sigma_sp = [0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1];
-GASSTV_CondatVu.lambda_rho_sp = [0.7, 0.8, 0.9, 1, 1.1, 1.2];
+GASSTV_CondatVu.sigma_sp = [0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1];
+GASSTV_CondatVu.lambda_rho_sp = [0.5, 0.6, 0.7, 0.8, 0.9, 1, 1.1, 1.2];
 
 GASSTV_CondatVu.sigma_l = {"med"};
 GASSTV_CondatVu.lambda2 = [1];
@@ -237,7 +237,7 @@ for idx_image = idc_images
         end
     
         fig_name = sprintf( ...
-            "%s_GASSTV_g%g_ps%g_pt%g_pd%g_heatmap", ...
+            "%s_GASSTV_g%g_ps%g_pt%g_pd%g_spagraph", ...
             image, ...
             deg.gaussian_sigma, deg.sparse_rate, ...
             deg.stripe_rate, deg.deadline_rate );
