@@ -284,7 +284,7 @@ fprintf("~~~ P-PDS ENDS ~~~\n");
 HSI_restored                    = gather(U);
 output.iter                     = gather(i);
 removed_noise.all_noise         = HSI_noisy - HSI_restored;
-removed_noise.sparse_noise      = gather(S);
+% removed_noise.sparse_noise      = gather(S);
 % removed_noise.stripe_noise      = gather(T);
 % removed_noise.gaussian_noise    = HSI_noisy - HSI_restored ...
 %                                     - removed_noise.sparse_noise - removed_noise.stripe_noise;
