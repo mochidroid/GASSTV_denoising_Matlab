@@ -49,10 +49,10 @@ fprintf('Noise: Gaussian=%.2f, Sparse=%.2f, Stripe=%.2f\n', ...
 
 %% Setting Parameters
 sigma_sp_opts = "90";   % 空間グラフ用 sigma ("med" or "90" or numeric)
-opts_GLR.num_segments = single(5);
-opts_GLR.k_lap        = 30;
-opts_GLR.sigma_l      = "med"; % スペクトルグラフ用
-opts_GLR.order_filt   = single(3);     % 代表スペクトルのメディアンフィルタサイズ
+num_segments = single(4);
+k_lap        = 10;
+sigma_l      = "med"; % スペクトルグラフ用
+order_filt   = single(5);     % 代表スペクトルのメディアンフィルタサイズ
 
 
 %% 2. Spatial Graph Comparison
@@ -80,9 +80,9 @@ diff_Wsp = abs(Wsp_clean_slice - Wsp_noisy_slice);
 fprintf('--- Calculating Spectral Graphs (GLR) ---\n');
 
 % Clean
-[L_clean, ~, ~, info_clean] = Create_SpectralGraphLaplacian(U, opts_GLR);
+[L_clean, ~, ~, info_clean] = Create_SpectralGraphLaplacian(U, num_segments, sigma_l, k_lap, order_filt);
 % Noisy
-[L_noisy, ~, ~, info_noisy] = Create_SpectralGraphLaplacian(V, opts_GLR);
+[L_noisy, ~, ~, info_noisy] = Create_SpectralGraphLaplacian(V, num_segments, sigma_l, k_lap, order_filt);
 
 % 代表スペクトルの取得
 R_clean = info_clean.representative; % [S x K] (or S x N3 depending on func)
