@@ -208,7 +208,7 @@ for idx_image = idc_images
             image, deg.gaussian_sigma, deg.sparse_rate, deg.stripe_rate, deg.deadline_rate);
 
         fig_path_png = fullfile(save_figure_folder, fig_base + ".png");
-        print(fig, fig_path_png, "-dpng", "-r400");
+        print(fig, fig_path_png, "-dpng", "-r200");
         fprintf("[Saved PNG] %s\n", fig_path_png);
     end
 

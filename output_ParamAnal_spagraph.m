@@ -245,7 +245,7 @@ for idx_image = idc_images
         fig_path = fullfile(save_figure_folder, fig_name + ".png");
     
         set(gcf,"Color","w");
-        print(gcf, fig_path, "-dpng", "-r500");   % 500 dpi（論文向け）
+        print(gcf, fig_path, "-dpng", "-r200");   % 500 dpi（論文向け）
     
         fprintf("[Saved PNG] %s\n", fig_path);
     end
