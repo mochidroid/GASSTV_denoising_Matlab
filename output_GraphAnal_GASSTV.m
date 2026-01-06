@@ -33,7 +33,8 @@ k_lap        = 10;
 sigma_l      = "med";
 order_filt   = 5;
 
-dpi_png = 600;
+% dpi_png = 600;
+dpi_png = 300;
 
 is_output = 1;
 
