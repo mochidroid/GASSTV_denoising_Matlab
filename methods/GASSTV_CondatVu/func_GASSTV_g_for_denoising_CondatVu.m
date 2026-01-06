@@ -36,21 +36,20 @@ HSI_noisy_gpu = gpuArray(single(HSI_noisy));
 epsilon         = gpuArray(single(params.epsilon));
 % alpha           = gpuArray(single(params.alpha));
 % beta            = gpuArray(single(params.beta));
-% sigma_s         = single(params.sigma_s);
-lambda_rho_sp   = gpuArray(single(params.lambda_rho_sp));
-lambda2         = gpuArray(single(params.lambda2));
 maxiter         = gpuArray(single(params.maxiter));
 stopcri         = gpuArray(single(params.stopcri));
 
 % Spatial graph
 sigma_sp        = params.sigma_sp;
+lambda_rho_sp   = gpuArray(single(params.lambda_rho_sp));
 
 % Spectral graph
 sigma_l         = params.sigma_l;
 num_segments    = single(params.num_segments);
 order_filt      = single(params.order_filt);
+lambda2         = gpuArray(single(params.lambda2));
 
-k_lap = single(10);
+k_lap           = single(params.k_lap);
 
 
 %% Setting params
@@ -105,7 +104,7 @@ Dlt     = @(z) cat(3, -z(:, :, 1), -z(:, :, 2:n3-1) + z(:, :, 1:n3-2), z(:, :, n
 
 %% Constructng graphs
 % (A) Spatial Graph Weights
-Wsp = Create_SpatialGraphWeight(HSI_clean, sigma_sp);
+Wsp = Create_SpatialGraphWeight(HSI_noisy, sigma_sp);
 lambda_sp = sum(abs(Wsp.*Dsp(HSI_clean)), "all") * lambda_rho_sp;
 
 
@@ -204,7 +203,7 @@ for i = 1:maxiter
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Updating Y4
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    % Y4_tmp  = Y4 + gamma2*(U_res + S_res + T_res); 
+    % Y4_tmp  = Y4 + gamma2*(U_res + S_res + T_res);    
     Y4_tmp  = Y4 + gamma2*(U_res);
     Y4_next = Y4_tmp - gamma2*ProjL2ball(Y4_tmp/gamma2, HSI_noisy_gpu, epsilon);
     
@@ -285,10 +284,10 @@ fprintf("~~~ P-PDS ENDS ~~~\n");
 HSI_restored                    = gather(U);
 output.iter                     = gather(i);
 removed_noise.all_noise         = HSI_noisy - HSI_restored;
-% removed_noise.sparse_noise      = gather(S);
+removed_noise.sparse_noise      = gather(S);
 % removed_noise.stripe_noise      = gather(T);
-% removed_noise.gaussian_noise    = HSI_noisy - HSI_restored - ...
-%                                     removed_noise.sparse_noise - removed_noise.stripe_noise;
+% removed_noise.gaussian_noise    = HSI_noisy - HSI_restored ...
+%                                     - removed_noise.sparse_noise - removed_noise.stripe_noise;
 removed_noise.gaussian_noise    = HSI_noisy - HSI_restored;
 
 output.converge_rate_U        = gather(converge_rate_U(1:output.iter));
