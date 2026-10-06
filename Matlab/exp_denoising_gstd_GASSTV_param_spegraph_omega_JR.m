@@ -77,8 +77,8 @@ GASSTV_CondatVu.lambda_rho_sp = [0.9];
 GASSTV_CondatVu.sigma_l = {0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1};
 % GASSTV_CondatVu.lambda2 = [1];
 % GASSTV_CondatVu.lambda2 = [0.01, 0.05, 0.1, 0.5, 1, 5, 10];
-% GASSTV_CondatVu.lambda2 = [0.01, 0.05, 0.1, 0.5, 1, 5, 10, 50, 100, 500];
-GASSTV_CondatVu.lambda2 = [5, 10, 50, 100];
+GASSTV_CondatVu.lambda2 = [0.01, 0.05, 0.1, 0.5, 1, 5, 10, 50, 100];
+% GASSTV_CondatVu.lambda2 = [0.01, 0.05, 0.1, 0.5, 1];
 % GASSTV_CondatVu.k_lap = [10];
 GASSTV_CondatVu.k_lap = [1000];
 % GASSTV_CondatVu.k_lap = [2, 5, 8, 10, 15, 20, 50, 100];
@@ -87,7 +87,7 @@ GASSTV_CondatVu.num_segments = [4];
 % GASSTV_CondatVu.order_filt = [5, 1];
 GASSTV_CondatVu.order_filt = [5];
 methods_info(1) = struct( ...
-    "name", "GASSTV_CondatVu", ...
+    "name", "GASSTV_CondatVu_re", ...
     "func", @(HSI_clean, HSI_noisy, params, deg) ...
         select_func_GASSTV_for_denoising_CondatVu(HSI_clean, HSI_noisy, params, deg), ...
     "param_names", {{"lambda_rho_sp", "lambda2", ...

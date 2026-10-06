@@ -1,2 +1,11 @@
+# MATLAB
 * .asv
 *.asv
+
+# Python
+.venv/
+__pycache__/
+
+# 生成データ・実験結果 (Matlab/Generate_dataset_denoising.m, 各 run スクリプトで再生成できる)
+dataset/
+result/
