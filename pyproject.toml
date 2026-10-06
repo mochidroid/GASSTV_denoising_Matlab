@@ -1,0 +1,23 @@
+[project]
+name = "gasstv-denoising"
+version = "0.1.0"
+description = "PyTorch implementation of GASSTV (Condat-Vu / P-PDS) for HSI mixed-noise removal"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "numpy>=2.0",
+    "scipy>=1.13",
+    "h5py>=3.11",
+    "torch>=2.8",
+]
+
+[tool.uv]
+package = false
+
+# CUDA 版 PyTorch を取得する (RTX 3090 / CUDA 12.8)
+[tool.uv.sources]
+torch = [{ index = "pytorch-cu128" }]
+
+[[tool.uv.index]]
+name = "pytorch-cu128"
+url = "https://download.pytorch.org/whl/cu128"
+explicit = true
