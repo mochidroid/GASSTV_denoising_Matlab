@@ -1,0 +1,163 @@
+image,cond,noise,kind,target,n,expected,missing,source,n_old
+JasperRidge,1,g0.1_ps0_pt0_pd0,GASSTV,omega0,0,1,ω=0,,
+JasperRidge,1,g0.1_ps0_pt0_pd0,GASSTV,baseline,0,5,ω=10 ω=30 ω=100 ω=300 ω=1000,,
+JasperRidge,1,g0.1_ps0_pt0_pd0,GASSTV,p2_mknn,0,5,ω=10 ω=30 ω=100 ω=300 ω=1000,,
+JasperRidge,1,g0.1_ps0_pt0_pd0,GASSTV,p2_mknn_ns,0,5,ω=10 ω=30 ω=100 ω=300 ω=1000,,
+JasperRidge,1,g0.1_ps0_pt0_pd0,GASSTV,p2_eps,0,5,ω=10 ω=30 ω=100 ω=300 ω=1000,,
+JasperRidge,1,g0.1_ps0_pt0_pd0,既存法,SSTV,1,1,,result,0
+JasperRidge,1,g0.1_ps0_pt0_pd0,既存法,HSSTV_L1,3,3,,result,0
+JasperRidge,1,g0.1_ps0_pt0_pd0,既存法,HSSTV_L12,3,3,,result,0
+JasperRidge,1,g0.1_ps0_pt0_pd0,既存法,l0l1HTV,4,4,,result,0
+JasperRidge,2,g0.05_ps0.05_pt0_pd0,GASSTV,omega0,1,1,,noise_conditions,
+JasperRidge,2,g0.05_ps0.05_pt0_pd0,GASSTV,baseline,5,5,,noise_conditions,
+JasperRidge,2,g0.05_ps0.05_pt0_pd0,GASSTV,p2_mknn,5,5,,noise_conditions,
+JasperRidge,2,g0.05_ps0.05_pt0_pd0,GASSTV,p2_mknn_ns,5,5,,noise_conditions,
+JasperRidge,2,g0.05_ps0.05_pt0_pd0,GASSTV,p2_eps,5,5,,noise_conditions,
+JasperRidge,2,g0.05_ps0.05_pt0_pd0,既存法,SSTV,1,1,,result,0
+JasperRidge,2,g0.05_ps0.05_pt0_pd0,既存法,HSSTV_L1,3,3,,result,0
+JasperRidge,2,g0.05_ps0.05_pt0_pd0,既存法,HSSTV_L12,3,3,,result,0
+JasperRidge,2,g0.05_ps0.05_pt0_pd0,既存法,l0l1HTV,4,4,,result,0
+JasperRidge,3,g0.1_ps0.05_pt0_pd0,GASSTV,omega0,1,1,,noise_conditions,
+JasperRidge,3,g0.1_ps0.05_pt0_pd0,GASSTV,baseline,5,5,,noise_conditions,
+JasperRidge,3,g0.1_ps0.05_pt0_pd0,GASSTV,p2_mknn,5,5,,noise_conditions,
+JasperRidge,3,g0.1_ps0.05_pt0_pd0,GASSTV,p2_mknn_ns,5,5,,noise_conditions,
+JasperRidge,3,g0.1_ps0.05_pt0_pd0,GASSTV,p2_eps,5,5,,noise_conditions,
+JasperRidge,3,g0.1_ps0.05_pt0_pd0,既存法,SSTV,1,1,,result,0
+JasperRidge,3,g0.1_ps0.05_pt0_pd0,既存法,HSSTV_L1,3,3,,result,0
+JasperRidge,3,g0.1_ps0.05_pt0_pd0,既存法,HSSTV_L12,3,3,,result,0
+JasperRidge,3,g0.1_ps0.05_pt0_pd0,既存法,l0l1HTV,4,4,,result,0
+JasperRidge,4,g0.05_ps0_pt0.05_pd0,GASSTV,omega0,1,1,,noise_conditions,
+JasperRidge,4,g0.05_ps0_pt0.05_pd0,GASSTV,baseline,5,5,,noise_conditions,
+JasperRidge,4,g0.05_ps0_pt0.05_pd0,GASSTV,p2_mknn,5,5,,noise_conditions,
+JasperRidge,4,g0.05_ps0_pt0.05_pd0,GASSTV,p2_mknn_ns,5,5,,noise_conditions,
+JasperRidge,4,g0.05_ps0_pt0.05_pd0,GASSTV,p2_eps,5,5,,noise_conditions,
+JasperRidge,4,g0.05_ps0_pt0.05_pd0,既存法,SSTV,1,1,,result,0
+JasperRidge,4,g0.05_ps0_pt0.05_pd0,既存法,HSSTV_L1,3,3,,result,0
+JasperRidge,4,g0.05_ps0_pt0.05_pd0,既存法,HSSTV_L12,3,3,,result,0
+JasperRidge,4,g0.05_ps0_pt0.05_pd0,既存法,l0l1HTV,4,4,,result,0
+JasperRidge,5,g0.1_ps0_pt0.05_pd0,GASSTV,omega0,1,1,,noise_conditions,
+JasperRidge,5,g0.1_ps0_pt0.05_pd0,GASSTV,baseline,5,5,,noise_conditions,
+JasperRidge,5,g0.1_ps0_pt0.05_pd0,GASSTV,p2_mknn,5,5,,noise_conditions,
+JasperRidge,5,g0.1_ps0_pt0.05_pd0,GASSTV,p2_mknn_ns,5,5,,noise_conditions,
+JasperRidge,5,g0.1_ps0_pt0.05_pd0,GASSTV,p2_eps,5,5,,noise_conditions,
+JasperRidge,5,g0.1_ps0_pt0.05_pd0,既存法,SSTV,1,1,,result,0
+JasperRidge,5,g0.1_ps0_pt0.05_pd0,既存法,HSSTV_L1,3,3,,result,0
+JasperRidge,5,g0.1_ps0_pt0.05_pd0,既存法,HSSTV_L12,3,3,,result,0
+JasperRidge,5,g0.1_ps0_pt0.05_pd0,既存法,l0l1HTV,4,4,,result,0
+JasperRidge,6,g0.05_ps0.05_pt0.05_pd0,GASSTV,omega0,1,1,,noise_conditions,
+JasperRidge,6,g0.05_ps0.05_pt0.05_pd0,GASSTV,baseline,5,5,,noise_conditions,
+JasperRidge,6,g0.05_ps0.05_pt0.05_pd0,GASSTV,p2_mknn,5,5,,noise_conditions,
+JasperRidge,6,g0.05_ps0.05_pt0.05_pd0,GASSTV,p2_mknn_ns,5,5,,noise_conditions,
+JasperRidge,6,g0.05_ps0.05_pt0.05_pd0,GASSTV,p2_eps,5,5,,noise_conditions,
+JasperRidge,6,g0.05_ps0.05_pt0.05_pd0,既存法,SSTV,1,1,,result,0
+JasperRidge,6,g0.05_ps0.05_pt0.05_pd0,既存法,HSSTV_L1,3,3,,result,0
+JasperRidge,6,g0.05_ps0.05_pt0.05_pd0,既存法,HSSTV_L12,3,3,,result,0
+JasperRidge,6,g0.05_ps0.05_pt0.05_pd0,既存法,l0l1HTV,4,4,,result,0
+JasperRidge,7,g0.1_ps0.05_pt0.05_pd0,GASSTV,omega0,1,1,,noise_conditions,
+JasperRidge,7,g0.1_ps0.05_pt0.05_pd0,GASSTV,baseline,5,5,,noise_conditions,
+JasperRidge,7,g0.1_ps0.05_pt0.05_pd0,GASSTV,p2_mknn,5,5,,noise_conditions,
+JasperRidge,7,g0.1_ps0.05_pt0.05_pd0,GASSTV,p2_mknn_ns,5,5,,noise_conditions,
+JasperRidge,7,g0.1_ps0.05_pt0.05_pd0,GASSTV,p2_eps,5,5,,noise_conditions,
+JasperRidge,7,g0.1_ps0.05_pt0.05_pd0,既存法,SSTV,1,1,,result,0
+JasperRidge,7,g0.1_ps0.05_pt0.05_pd0,既存法,HSSTV_L1,3,3,,result,0
+JasperRidge,7,g0.1_ps0.05_pt0.05_pd0,既存法,HSSTV_L12,3,3,,result,0
+JasperRidge,7,g0.1_ps0.05_pt0.05_pd0,既存法,l0l1HTV,4,4,,result,0
+JasperRidge,8,g0.1_ps0_pt0_pd0.01,GASSTV,omega0,0,1,ω=0,,
+JasperRidge,8,g0.1_ps0_pt0_pd0.01,GASSTV,baseline,0,5,ω=10 ω=30 ω=100 ω=300 ω=1000,,
+JasperRidge,8,g0.1_ps0_pt0_pd0.01,GASSTV,p2_mknn,0,5,ω=10 ω=30 ω=100 ω=300 ω=1000,,
+JasperRidge,8,g0.1_ps0_pt0_pd0.01,GASSTV,p2_mknn_ns,0,5,ω=10 ω=30 ω=100 ω=300 ω=1000,,
+JasperRidge,8,g0.1_ps0_pt0_pd0.01,GASSTV,p2_eps,0,5,ω=10 ω=30 ω=100 ω=300 ω=1000,,
+JasperRidge,8,g0.1_ps0_pt0_pd0.01,既存法,SSTV,1,1,,old_results,1
+JasperRidge,8,g0.1_ps0_pt0_pd0.01,既存法,HSSTV_L1,2,3,o0.01_r0.95_stop1e-5,old_results,2
+JasperRidge,8,g0.1_ps0_pt0_pd0.01,既存法,HSSTV_L12,2,3,o0.01_r0.95_stop1e-5,old_results,2
+JasperRidge,8,g0.1_ps0_pt0_pd0.01,既存法,l0l1HTV,4,4,,old_results,4
+JasperRidge,9,g0.1_ps0.05_pt0.05_pd0.01,GASSTV,omega0,1,1,,eps_graph,
+JasperRidge,9,g0.1_ps0.05_pt0.05_pd0.01,GASSTV,baseline,5,5,,eps_graph,
+JasperRidge,9,g0.1_ps0.05_pt0.05_pd0.01,GASSTV,p2_mknn,5,5,,eps_graph,
+JasperRidge,9,g0.1_ps0.05_pt0.05_pd0.01,GASSTV,p2_mknn_ns,5,5,,eps_graph,
+JasperRidge,9,g0.1_ps0.05_pt0.05_pd0.01,GASSTV,p2_eps,5,5,,eps_graph,
+JasperRidge,9,g0.1_ps0.05_pt0.05_pd0.01,既存法,SSTV,1,1,,result,0
+JasperRidge,9,g0.1_ps0.05_pt0.05_pd0.01,既存法,HSSTV_L1,3,3,,result,0
+JasperRidge,9,g0.1_ps0.05_pt0.05_pd0.01,既存法,HSSTV_L12,3,3,,result,0
+JasperRidge,9,g0.1_ps0.05_pt0.05_pd0.01,既存法,l0l1HTV,4,4,,result,0
+PaviaU,1,g0.1_ps0_pt0_pd0,GASSTV,omega0,0,1,ω=0,,
+PaviaU,1,g0.1_ps0_pt0_pd0,GASSTV,baseline,0,5,ω=10 ω=30 ω=100 ω=300 ω=1000,,
+PaviaU,1,g0.1_ps0_pt0_pd0,GASSTV,p2_mknn,0,5,ω=10 ω=30 ω=100 ω=300 ω=1000,,
+PaviaU,1,g0.1_ps0_pt0_pd0,GASSTV,p2_mknn_ns,0,5,ω=10 ω=30 ω=100 ω=300 ω=1000,,
+PaviaU,1,g0.1_ps0_pt0_pd0,GASSTV,p2_eps,0,5,ω=10 ω=30 ω=100 ω=300 ω=1000,,
+PaviaU,1,g0.1_ps0_pt0_pd0,既存法,SSTV,1,1,,result,0
+PaviaU,1,g0.1_ps0_pt0_pd0,既存法,HSSTV_L1,3,3,,result,0
+PaviaU,1,g0.1_ps0_pt0_pd0,既存法,HSSTV_L12,3,3,,result,0
+PaviaU,1,g0.1_ps0_pt0_pd0,既存法,l0l1HTV,4,4,,result,0
+PaviaU,2,g0.05_ps0.05_pt0_pd0,GASSTV,omega0,1,1,,noise_conditions,
+PaviaU,2,g0.05_ps0.05_pt0_pd0,GASSTV,baseline,5,5,,noise_conditions,
+PaviaU,2,g0.05_ps0.05_pt0_pd0,GASSTV,p2_mknn,5,5,,noise_conditions,
+PaviaU,2,g0.05_ps0.05_pt0_pd0,GASSTV,p2_mknn_ns,5,5,,noise_conditions,
+PaviaU,2,g0.05_ps0.05_pt0_pd0,GASSTV,p2_eps,5,5,,noise_conditions,
+PaviaU,2,g0.05_ps0.05_pt0_pd0,既存法,SSTV,1,1,,result,0
+PaviaU,2,g0.05_ps0.05_pt0_pd0,既存法,HSSTV_L1,3,3,,result,0
+PaviaU,2,g0.05_ps0.05_pt0_pd0,既存法,HSSTV_L12,3,3,,result,0
+PaviaU,2,g0.05_ps0.05_pt0_pd0,既存法,l0l1HTV,4,4,,result,0
+PaviaU,3,g0.1_ps0.05_pt0_pd0,GASSTV,omega0,1,1,,noise_conditions,
+PaviaU,3,g0.1_ps0.05_pt0_pd0,GASSTV,baseline,5,5,,noise_conditions,
+PaviaU,3,g0.1_ps0.05_pt0_pd0,GASSTV,p2_mknn,5,5,,noise_conditions,
+PaviaU,3,g0.1_ps0.05_pt0_pd0,GASSTV,p2_mknn_ns,5,5,,noise_conditions,
+PaviaU,3,g0.1_ps0.05_pt0_pd0,GASSTV,p2_eps,5,5,,noise_conditions,
+PaviaU,3,g0.1_ps0.05_pt0_pd0,既存法,SSTV,1,1,,result,0
+PaviaU,3,g0.1_ps0.05_pt0_pd0,既存法,HSSTV_L1,3,3,,result,0
+PaviaU,3,g0.1_ps0.05_pt0_pd0,既存法,HSSTV_L12,3,3,,result,0
+PaviaU,3,g0.1_ps0.05_pt0_pd0,既存法,l0l1HTV,4,4,,result,0
+PaviaU,4,g0.05_ps0_pt0.05_pd0,GASSTV,omega0,1,1,,noise_conditions,
+PaviaU,4,g0.05_ps0_pt0.05_pd0,GASSTV,baseline,5,5,,noise_conditions,
+PaviaU,4,g0.05_ps0_pt0.05_pd0,GASSTV,p2_mknn,5,5,,noise_conditions,
+PaviaU,4,g0.05_ps0_pt0.05_pd0,GASSTV,p2_mknn_ns,5,5,,noise_conditions,
+PaviaU,4,g0.05_ps0_pt0.05_pd0,GASSTV,p2_eps,5,5,,noise_conditions,
+PaviaU,4,g0.05_ps0_pt0.05_pd0,既存法,SSTV,1,1,,result,0
+PaviaU,4,g0.05_ps0_pt0.05_pd0,既存法,HSSTV_L1,3,3,,result,0
+PaviaU,4,g0.05_ps0_pt0.05_pd0,既存法,HSSTV_L12,3,3,,result,0
+PaviaU,4,g0.05_ps0_pt0.05_pd0,既存法,l0l1HTV,4,4,,result,0
+PaviaU,5,g0.1_ps0_pt0.05_pd0,GASSTV,omega0,1,1,,noise_conditions,
+PaviaU,5,g0.1_ps0_pt0.05_pd0,GASSTV,baseline,5,5,,noise_conditions,
+PaviaU,5,g0.1_ps0_pt0.05_pd0,GASSTV,p2_mknn,5,5,,noise_conditions,
+PaviaU,5,g0.1_ps0_pt0.05_pd0,GASSTV,p2_mknn_ns,5,5,,noise_conditions,
+PaviaU,5,g0.1_ps0_pt0.05_pd0,GASSTV,p2_eps,5,5,,noise_conditions,
+PaviaU,5,g0.1_ps0_pt0.05_pd0,既存法,SSTV,1,1,,result,0
+PaviaU,5,g0.1_ps0_pt0.05_pd0,既存法,HSSTV_L1,3,3,,result,0
+PaviaU,5,g0.1_ps0_pt0.05_pd0,既存法,HSSTV_L12,3,3,,result,0
+PaviaU,5,g0.1_ps0_pt0.05_pd0,既存法,l0l1HTV,4,4,,result,0
+PaviaU,6,g0.05_ps0.05_pt0.05_pd0,GASSTV,omega0,1,1,,noise_conditions,
+PaviaU,6,g0.05_ps0.05_pt0.05_pd0,GASSTV,baseline,5,5,,noise_conditions,
+PaviaU,6,g0.05_ps0.05_pt0.05_pd0,GASSTV,p2_mknn,5,5,,noise_conditions,
+PaviaU,6,g0.05_ps0.05_pt0.05_pd0,GASSTV,p2_mknn_ns,5,5,,noise_conditions,
+PaviaU,6,g0.05_ps0.05_pt0.05_pd0,GASSTV,p2_eps,5,5,,noise_conditions,
+PaviaU,6,g0.05_ps0.05_pt0.05_pd0,既存法,SSTV,1,1,,result,0
+PaviaU,6,g0.05_ps0.05_pt0.05_pd0,既存法,HSSTV_L1,3,3,,result,0
+PaviaU,6,g0.05_ps0.05_pt0.05_pd0,既存法,HSSTV_L12,3,3,,result,0
+PaviaU,6,g0.05_ps0.05_pt0.05_pd0,既存法,l0l1HTV,4,4,,result,0
+PaviaU,7,g0.1_ps0.05_pt0.05_pd0,GASSTV,omega0,1,1,,noise_conditions,
+PaviaU,7,g0.1_ps0.05_pt0.05_pd0,GASSTV,baseline,5,5,,noise_conditions,
+PaviaU,7,g0.1_ps0.05_pt0.05_pd0,GASSTV,p2_mknn,5,5,,noise_conditions,
+PaviaU,7,g0.1_ps0.05_pt0.05_pd0,GASSTV,p2_mknn_ns,5,5,,noise_conditions,
+PaviaU,7,g0.1_ps0.05_pt0.05_pd0,GASSTV,p2_eps,5,5,,noise_conditions,
+PaviaU,7,g0.1_ps0.05_pt0.05_pd0,既存法,SSTV,1,1,,result,0
+PaviaU,7,g0.1_ps0.05_pt0.05_pd0,既存法,HSSTV_L1,3,3,,old_results+result,2
+PaviaU,7,g0.1_ps0.05_pt0.05_pd0,既存法,HSSTV_L12,3,3,,old_results,3
+PaviaU,7,g0.1_ps0.05_pt0.05_pd0,既存法,l0l1HTV,4,4,,old_results,4
+PaviaU,8,g0.1_ps0_pt0_pd0.01,GASSTV,omega0,0,1,ω=0,,
+PaviaU,8,g0.1_ps0_pt0_pd0.01,GASSTV,baseline,0,5,ω=10 ω=30 ω=100 ω=300 ω=1000,,
+PaviaU,8,g0.1_ps0_pt0_pd0.01,GASSTV,p2_mknn,0,5,ω=10 ω=30 ω=100 ω=300 ω=1000,,
+PaviaU,8,g0.1_ps0_pt0_pd0.01,GASSTV,p2_mknn_ns,0,5,ω=10 ω=30 ω=100 ω=300 ω=1000,,
+PaviaU,8,g0.1_ps0_pt0_pd0.01,GASSTV,p2_eps,0,5,ω=10 ω=30 ω=100 ω=300 ω=1000,,
+PaviaU,8,g0.1_ps0_pt0_pd0.01,既存法,SSTV,1,1,,old_results,1
+PaviaU,8,g0.1_ps0_pt0_pd0.01,既存法,HSSTV_L1,2,3,o0.01_r0.95_stop1e-5,old_results,2
+PaviaU,8,g0.1_ps0_pt0_pd0.01,既存法,HSSTV_L12,2,3,o0.01_r0.95_stop1e-5,old_results,2
+PaviaU,8,g0.1_ps0_pt0_pd0.01,既存法,l0l1HTV,4,4,,old_results,4
+PaviaU,9,g0.1_ps0.05_pt0.05_pd0.01,GASSTV,omega0,1,1,,eps_graph,
+PaviaU,9,g0.1_ps0.05_pt0.05_pd0.01,GASSTV,baseline,5,5,,eps_graph,
+PaviaU,9,g0.1_ps0.05_pt0.05_pd0.01,GASSTV,p2_mknn,5,5,,eps_graph,
+PaviaU,9,g0.1_ps0.05_pt0.05_pd0.01,GASSTV,p2_mknn_ns,5,5,,eps_graph,
+PaviaU,9,g0.1_ps0.05_pt0.05_pd0.01,GASSTV,p2_eps,5,5,,eps_graph,
+PaviaU,9,g0.1_ps0.05_pt0.05_pd0.01,既存法,SSTV,1,1,,result,0
+PaviaU,9,g0.1_ps0.05_pt0.05_pd0.01,既存法,HSSTV_L1,3,3,,result,0
+PaviaU,9,g0.1_ps0.05_pt0.05_pd0.01,既存法,HSSTV_L12,3,3,,result,0
+PaviaU,9,g0.1_ps0.05_pt0.05_pd0.01,既存法,l0l1HTV,4,4,,result,0
