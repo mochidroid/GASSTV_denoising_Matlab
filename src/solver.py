@@ -101,13 +101,31 @@ def gasstv_condatvu(HSI_clean: np.ndarray, HSI_noisy: np.ndarray, params: dict,
            "guide": clean if opt.oracle else noisy}[opt.lambda_sp_ref]
     lambda_sp = float((Wsp * ops.D4(ref)).abs().sum(dtype=torch.float64)) * lambda_rho_sp
 
-    # (B) スペクトルグラフ (セグメントごとのラプラシアン)
+    # (B) スペクトルグラフ
+    #   params["spec_graph"] が無い / "baseline" のときは従来どおり (セグメントごとのラプラシアン).
+    #   それ以外は src.spectral_graphs.build_graph(params["spec_graph"], guide, **params["spec_graph_kw"]).
     log("~ Creating spectral graph ~")
-    rng = np.random.default_rng(opt.seed)
-    L_np, lam_max_vec, info_l = spectral_graph_laplacian(
-        guide, int(params["num_segments"]), params["sigma_l"], int(params["k_lap"]),
-        int(params["order_filt"]), rng)
-    log(f"sigma_l: {info_l['val_sigma_l']:5f}")
+    spec_method = params.get("spec_graph", "baseline")
+    target_np = None
+    if spec_method == "baseline":
+        rng = np.random.default_rng(opt.seed)
+        L_np, lam_max_vec, info_l = spectral_graph_laplacian(
+            guide, int(params["num_segments"]), params["sigma_l"], int(params["k_lap"]),
+            int(params["order_filt"]), rng)
+        log(f"sigma_l: {info_l['val_sigma_l']:5f}")
+    else:
+        from .spectral_graphs import build_graph
+        g = build_graph(spec_method, guide, **dict(params.get("spec_graph_kw", {})))
+        L_np, lam_max_vec = g.L, g.lam_max
+        info_l = dict(labels=g.labels, val_sigma_l=float(g.info.get("sigma", np.nan)))
+        if getattr(g, "target", None) is not None:
+            target_np = g.target  # (S, K): GLR を (Dl u_p - target[seg(p)]) にかける
+        log(f"spectral graph: {spec_method} {params.get('spec_graph_kw', {})}, lam_max={lam_max_vec.max():.3f}")
+    # lambda2_mode = "normalized" のときは L を最大固有値で割る (グラフ間で lambda2 の意味をそろえる)
+    if params.get("lambda2_mode", "raw") == "normalized":
+        scale = float(np.max(lam_max_vec)) if np.max(lam_max_vec) > 0 else 1.0
+        L_np = L_np / scale
+        lam_max_vec = lam_max_vec / scale
     L = torch.from_numpy(L_np).to(dev, dt)  # (S, K, K)
     seg_flat = torch.from_numpy(info_l["labels"].reshape(-1)).to(dev)
     seg_idx = [torch.nonzero(seg_flat == s).squeeze(1) for s in range(L.shape[0])]
@@ -116,9 +134,14 @@ def gasstv_condatvu(HSI_clean: np.ndarray, HSI_noisy: np.ndarray, params: dict,
     lam_max_vec = np.where(np.isfinite(lam_max_vec), lam_max_vec, 0)
     max_eig_L = float(lam_max_vec.max())
 
+    # 提案法 (anchored): 代表スペクトル差分 target を画素ごとに展開しておく
+    target_pix = (torch.from_numpy(target_np).to(dev, dt)[seg_flat] if target_np is not None else None)
+
     def grad_glr(U: torch.Tensor) -> torch.Tensor:
-        """compute_GLR_gradient: omega * Dl^T( L_{seg(p)} Dl(u_p) )."""
+        """compute_GLR_gradient: omega * Dl^T( L_{seg(p)} (Dl(u_p) - target_{seg(p)}) ).  target なしなら従来どおり."""
         V = ops.Dl_glr(U).reshape(n1 * n2, n3 - 1)
+        if target_pix is not None:
+            V = V - target_pix
         W = torch.zeros_like(V)
         for s, idx in seg_idx:
             W[idx] = V[idx] @ L[s]
