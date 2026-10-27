@@ -8,6 +8,7 @@ dependencies = [
     "scipy>=1.13",
     "h5py>=3.11",
     "torch>=2.8",
+    "matplotlib>=3.11.2",
 ]
 
 [tool.uv]
