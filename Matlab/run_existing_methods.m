@@ -8,7 +8,8 @@
 %     <リポジトリ直下>/result/GASSTV_result/denoising_<image>/g<..>_ps<..>_pt<..>_pd<..>/<method>/<params>.mat
 %     <リポジトリ直下>/result/GASSTV_comp_result/...  (復元画像と指標のみ)
 % - SSTV / HSSTV / l0l1HTV には g, gt 用の関数が無いので, gs, gst 用の関数で代用する.
-%   スパースノイズが無いときは alpha = 0 となり S = 0 に固定されるため, g, gt 用と等価.
+%   スパースノイズも deadline ノイズも無いときは alpha = 0 となり S = 0 に固定されるため, g, gt 用と等価.
+% - epsilon, alpha, beta は calc_noise_radii.m で計算する (deadline ノイズはスパースの項に含める).
 % - 既存法のコード (methods/ 以下) には手を加えていない.
 %
 % 実行方法 (リポジトリ直下で):
@@ -240,13 +241,9 @@ params = struct();
 for idx_params = 1:numel(params_name)
     params.(params_name{idx_params}) = params_comb{idx_params_comb}{idx_params};
 
-    % If rho_radius exists, calculate epsilon, alpha, and beta
+    % If rho_radius exists, calculate epsilon, alpha, and beta (deadline はスパースの項に含める)
     if strcmp(params_name{idx_params}, "rho_radius")
-        rate_except_sd = 1 - deg.sparse_rate - 2*deg.deadline_rate + 2*deg.sparse_rate*deg.deadline_rate;
-        params.epsilon = params.rho_radius * deg.gaussian_sigma * sqrt(hsi.N * rate_except_sd);
-        params.alpha = params.rho_radius * (0.5 * hsi.N * (deg.sparse_rate - 2*deg.sparse_rate*deg.deadline_rate));
-        params.beta = params.rho_radius * hsi.N * rate_except_sd ...
-            * deg.stripe_rate * deg.stripe_intensity / 2;
+        params = calc_noise_radii(params, deg, hsi, HSI_noisy);
     end
 end
 
@@ -334,7 +331,7 @@ end
 function [HSI_restored, removed_noise, other_result] = run_tv_method(name, HSI_clean, HSI_noisy, params, deg)
 % SSTV / HSSTV / l0l1HTV の呼び出し.
 % g, gt 用の関数は存在しないため, ストライプ無しなら gs 用, 有りなら gst 用を使う
-% (スパースノイズ無しのときは alpha = 0 で S = 0 に固定されるので等価).
+% (スパースノイズも deadline ノイズも無いときは alpha = 0 で S = 0 に固定されるので等価).
 if deg.stripe_rate == 0
     func = str2func(append("func_", name, "_gs_for_denoising"));
 else

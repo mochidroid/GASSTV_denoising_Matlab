@@ -26,7 +26,7 @@ from pathlib import Path
 import numpy as np
 import torch
 
-from src.data import DEFAULT_DATA_DIR, generate_obsv, load_dataset, load_hsi, obsv_dirname
+from src.data import DEFAULT_DATA_DIR, generate_obsv, load_dataset, load_hsi, noise_radii, obsv_dirname
 from src.io import save_mat
 from src.metrics import calc_mpsnr, calc_mssim, calc_sam, psnr_per_band, ssim_per_band
 from src.solver import SolverOptions, gasstv_condatvu, select_noise_model
@@ -216,13 +216,8 @@ def main() -> None:
                 for idx_comb, prm in enumerate(combos, 1):
                     count += 1
                     params = dict(prm)
-                    # epsilon, alpha, beta (exp_denoising_gstd_Base.m と同じ式)
-                    ps, pd = deg["sparse_rate"], deg["deadline_rate"]
-                    rate_except_sd = 1 - ps - 2 * pd + 2 * ps * pd
-                    params["epsilon"] = params["rho_radius"] * deg["gaussian_sigma"] * np.sqrt(hsi["N"] * rate_except_sd)
-                    params["alpha"] = params["rho_radius"] * (0.5 * hsi["N"] * (ps - 2 * ps * pd))
-                    params["beta"] = (params["rho_radius"] * hsi["N"] * rate_except_sd
-                                      * deg["stripe_rate"] * deg["stripe_intensity"] / 2)
+                    # epsilon, alpha, beta (deadline はスパースの項に含める. calc_noise_radii.m と同じ式)
+                    params.update(noise_radii(params["rho_radius"], deg, hsi, HSI_noisy))
 
                     savetext = params_savetext(params, graph, args.stopcri_idx, args)
                     sub = Path(f"denoising_{image}") / obsv_dirname(deg) / name / f"{savetext}.mat"

@@ -169,6 +169,25 @@ def generate_obsv(HSI_clean: np.ndarray, deg: dict, seed: int = 0) -> tuple[np.n
     return HSI_noisy, deg
 
 
+def noise_radii(rho: float, deg: dict, hsi: dict, HSI_noisy: np.ndarray) -> dict:
+    """epsilon (ガウシアン), alpha (スパース), beta (ストライプ) の半径 (Matlab/sub_functions/calc_noise_radii.m と同じ式).
+
+    deadline ノイズはスパースノイズの項に含める.
+      cr_dl : deadline の被覆率 (deadline の平均幅を 2 として 1 - exp(-2 * deadline_rate))
+      mu    : 観測の (0, 1) 内の画素値の平均 (deadline で 0 になった画素の元の値の目安)
+    """
+    r_sp = deg["sparse_rate"]
+    cr_dl = 1 - np.exp(-2 * deg["deadline_rate"])
+    x = np.asarray(HSI_noisy)
+    mu = float(np.mean(x[(x > 0) & (x < 1)], dtype=np.float64))
+    keep = hsi["N"] * (1 - r_sp) * (1 - cr_dl)
+    return dict(
+        epsilon=rho * deg["gaussian_sigma"] * np.sqrt(keep),
+        alpha=rho * hsi["N"] * (0.5 * r_sp + mu * cr_dl),
+        beta=rho * keep * deg["stripe_rate"] * deg["stripe_intensity"] / 2,
+    )
+
+
 def obsv_dirname(deg: dict) -> str:
     """MATLAB の append("g", num2str(...), "_ps", ...) と同じフォルダ名."""
     return (

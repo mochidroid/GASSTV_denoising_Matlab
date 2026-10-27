@@ -27,12 +27,13 @@ GAMMA2 = {"g": 1.0, "gs": 1 / 2, "gt": 1 / 2, "gst": 1 / 3}
 
 
 def select_noise_model(deg: dict) -> str:
-    """select_func_GASSTV_for_denoising_CondatVu.m と同じ分岐."""
-    if deg["sparse_rate"] == 0 and deg["stripe_rate"] == 0:
+    """select_func_GASSTV_for_denoising_CondatVu.m と同じ分岐 (deadline ノイズはスパースの項で扱う)."""
+    sparse = deg["sparse_rate"] > 0 or deg.get("deadline_rate", 0) > 0
+    if not sparse and deg["stripe_rate"] == 0:
         return "g"
     if deg["stripe_rate"] == 0:
         return "gs"
-    if deg["sparse_rate"] == 0:
+    if not sparse:
         return "gt"
     return "gst"
 

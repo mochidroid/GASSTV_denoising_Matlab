@@ -38,7 +38,7 @@ import numpy as np
 import torch
 
 from run_gasstv import NOISE_CONDITIONS, get_observation
-from src.data import DEFAULT_DATA_DIR, obsv_dirname
+from src.data import DEFAULT_DATA_DIR, noise_radii, obsv_dirname
 from src.io import save_mat
 from src.metrics import calc_mpsnr, calc_mssim, calc_sam
 from src.solver import SolverOptions, gasstv_condatvu, select_noise_model
@@ -275,13 +275,9 @@ def main():
             print(f"[{n}/{len(jobs)}] skip {path}")
             continue
 
-        ps, pd = deg["sparse_rate"], deg["deadline_rate"]
-        rate = 1 - ps - 2 * pd + 2 * ps * pd
         rho = j["rho"]
         params = dict(
-            epsilon=rho * deg["gaussian_sigma"] * np.sqrt(hsi["N"] * rate),
-            alpha=rho * (0.5 * hsi["N"] * (ps - 2 * ps * pd)),
-            beta=rho * hsi["N"] * rate * deg["stripe_rate"] * deg["stripe_intensity"] / 2,
+            **noise_radii(rho, deg, hsi, HSI_noisy),  # deadline はスパースの項に含める
             maxiter=args.maxiter, stopcri=stopcri, rho_radius=rho,
             lambda2=j["omega"], lambda2_mode=args.lambda2_mode,
             lambda_rho_sp=j["lrs"], sigma_sp=sig(j["ssp"]), spec_graph=spec,
