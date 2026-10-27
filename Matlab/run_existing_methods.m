@@ -10,8 +10,19 @@
 % - SSTV / HSSTV / l0l1HTV には g, gt 用の関数が無いので, gs, gst 用の関数で代用する.
 %   スパースノイズが無いときは alpha = 0 となり S = 0 に固定されるため, g, gt 用と等価.
 % - 既存法のコード (methods/ 以下) には手を加えていない.
+%
+% 実行方法 (リポジトリ直下で):
+%   matlab -batch "run('Matlab/run_existing_methods.m')"
+% 設定は下の既定値か, 実行前に cfg を置いて上書きする (指定しない項目は既定値):
+%   matlab -batch "cfg.noise = [1 9]; cfg.rhos = {0.90}; cfg.methods = {'SSTV','HSSTV_L1'}; run('Matlab/run_existing_methods.m')"
+%   cfg.noise   : ノイズ条件の番号 (下の noise_conditions の行番号)
+%   cfg.images  : 画像の番号 (下の images の番号)
+%   cfg.rhos    : rho_radius の候補 (cell)
+%   cfg.methods : 実行する手法名 (cell または string 配列). SSTV, HSSTV_L1, HSSTV_L12, l0l1HTV, LRTDTV, TPTV, FastHyMix
+%   cfg.skip_existing : true なら結果ファイルがある組み合わせを飛ばす
 
-clear
+if ~exist("cfg", "var"), cfg = struct(); end
+clearvars -except cfg
 close all;
 
 dir_matlab = fileparts(mfilename("fullpath"));
@@ -37,24 +48,25 @@ noise_conditions = { ...
     {0.1,   0.05,  0.05,  0.5,  0.01},  ... % 9: g0.1 ps0.05 pt0.05 pd0.01
 };
 
-idc_noise_conditions = [1];
+idc_noise_conditions = getcfg(cfg, "noise", 9);
 
 images = {...
     "JasperRidge", ...
     "PaviaU", ...
 };
 
-idc_images = 1:numel(images);
+idc_images = getcfg(cfg, "images", 1:numel(images));
 
 dir_dataset = fullfile(dir_matlab, "..", "dataset");
 dir_result  = fullfile(dir_matlab, "..", "result");
 
 % true にすると結果ファイルが既にある組み合わせを飛ばす
-skip_existing = false;
+skip_existing = getcfg(cfg, "skip_existing", true);
 
 
 %% Setting common parameters
-rhos = {0.98};
+% rho は提案法 (Python) と共通の値で比べる (0.90 と 0.95 のどちらに固定するかを決めるため両方回す)
+rhos = getcfg(cfg, "rhos", {0.90, 0.95});
 
 stopcri_idx = 5;
 stopcri = 10 ^ -stopcri_idx;
@@ -158,6 +170,12 @@ methods_info(end).get_params_savetext = @(params) sprintf("sub%d", params.k_subs
 methods_info(end).paths = {};
 methods_info(end).enable = true;
 
+
+% 実行する手法 (既定は rho を使う 4 手法. LRTDTV, TPTV, FastHyMix は rho に依存しないので必要なときだけ)
+methods_to_run = getcfg(cfg, "methods", ["SSTV", "HSSTV_L1", "HSSTV_L12", "l0l1HTV"]);
+for k = 1:numel(methods_info)
+    methods_info(k).enable = any(string(methods_info(k).name) == string(methods_to_run));
+end
 
 methods_info = methods_info([methods_info.enable]); % removing false methods
 num_methods = numel(methods_info);
@@ -303,6 +321,16 @@ fprintf("******* finis *******\n");
 
 
 %% Local functions
+function v = getcfg(cfg, name, default)
+% cfg に name があればその値, なければ default
+if isfield(cfg, name)
+    v = cfg.(name);
+else
+    v = default;
+end
+end
+
+
 function [HSI_restored, removed_noise, other_result] = run_tv_method(name, HSI_clean, HSI_noisy, params, deg)
 % SSTV / HSSTV / l0l1HTV の呼び出し.
 % g, gt 用の関数は存在しないため, ストライプ無しなら gs 用, 有りなら gst 用を使う
